@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workflow Design"
+  short_description: "Managed design-to-spec workflow"
+  default_prompt: "Use $workflow to produce a managed design and universal spec for this repo."

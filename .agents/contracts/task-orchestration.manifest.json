@@ -1,0 +1,61 @@
+{
+  "kind": "task-orchestration",
+  "description": "Managed task-orchestration stages and supervisor tasks",
+  "stages": [
+    {
+      "name": "convert-to-spec",
+      "taskId": "task-orchestration:convert-to-spec",
+      "taskKind": "artifact",
+      "agentRole": "builder",
+      "template": "task-orchestration/convert-to-spec",
+      "artifacts": [
+        { "path": "spec/universal-spec.md", "op": "create", "required": true }
+      ]
+    },
+    {
+      "name": "convert-to-tasks",
+      "taskId": "task-orchestration:convert-to-tasks",
+      "taskKind": "artifact",
+      "agentRole": "builder",
+      "template": "task-orchestration/convert-to-tasks",
+      "dependsOn": ["task-orchestration:convert-to-spec"],
+      "artifacts": [
+        { "path": "agent-outputs/planner/00_intake_manifest.md", "op": "create", "required": true },
+        { "path": "agent-outputs/planner/01_phase_structure.md", "op": "create", "required": true },
+        { "path": "AGENT_SYSTEM.md", "op": "create", "required": true }
+      ]
+    },
+    {
+      "name": "plan-markdown",
+      "taskId": "task-orchestration:plan-markdown",
+      "taskKind": "artifact",
+      "agentRole": "builder",
+      "template": "task-orchestration/plan-markdown",
+      "dependsOn": ["task-orchestration:convert-to-tasks"],
+      "artifacts": [
+        { "path": "{PLAN_NAME}.md", "op": "create", "required": true }
+      ]
+    },
+    {
+      "name": "final-triage",
+      "taskId": "task-orchestration:final-triage",
+      "taskKind": "triage",
+      "agentRole": "debt-triage",
+      "template": "task-orchestration/final-triage",
+      "dependsOn": ["task-orchestration:plan-markdown"],
+      "parentTaskId": "task-orchestration:execute",
+      "artifacts": [
+        { "path": "agent-outputs/planner/final-triage-report.md", "op": "create", "required": true }
+      ]
+    },
+    {
+      "name": "execute",
+      "taskId": "task-orchestration:execute",
+      "taskKind": "supervisor",
+      "agentRole": "builder",
+      "template": "task-orchestration/execute",
+      "dependsOn": ["task-orchestration:final-triage"],
+      "artifacts": []
+    }
+  ]
+}

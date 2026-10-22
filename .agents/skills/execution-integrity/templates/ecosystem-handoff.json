@@ -1,0 +1,18 @@
+{
+  "status": "complete",
+  "handoff": {
+    "skill": "execution-integrity",
+    "owner": "execution-integrity orchestrator",
+    "generatedFrom": [
+      "inventory/*",
+      "diagnose/*",
+      "plan/*"
+    ],
+    "artifactContract": "spec/universal-spec.md",
+    "status": "complete"
+  },
+  "dependencies": [
+    "execution-integrity manifest",
+    "task-orchestration convert-to-tasks"
+  ]
+}

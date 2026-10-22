@@ -1,0 +1,4 @@
+interface:
+  display_name: "Architecture Audit"
+  short_description: "Managed architecture audit orchestration"
+  default_prompt: "Use $architecture to run a managed architecture audit against the current repo."

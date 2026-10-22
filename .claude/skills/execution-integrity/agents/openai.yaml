@@ -1,0 +1,4 @@
+interface:
+  display_name: "Execution Integrity"
+  short_description: "Runtime and workflow integrity audit skill"
+  default_prompt: "Use /execution-integrity to run a reliability audit for assistant/runtime execution, jobs, and UI workflows."

@@ -1,0 +1,65 @@
+{
+  "kind": "execution-integrity",
+  "description": "Runtime and workflow integrity phase graph",
+  "phases": [
+    {
+      "name": "inventory",
+      "taskKind": "artifact",
+      "agentRole": "trace-scout",
+      "completionMarker": "jsonl-summary",
+      "tasks": [
+        { "taskId": "inventory:assistant-runtime", "template": "inventory-assistant-runtime.md", "outputPath": "inventory/assistant-runtime.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:tool-load-path", "template": "inventory-tool-load-path.md", "outputPath": "inventory/tool-load-path.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:workflow-failures", "template": "inventory-workflow-failures.md", "outputPath": "inventory/workflow-failures.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:task-jobs", "template": "inventory-task-jobs.md", "outputPath": "inventory/task-jobs.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:ui-controls", "template": "inventory-ui-controls.md", "outputPath": "inventory/ui-controls.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:campaign-readiness", "template": "inventory-campaign-readiness.md", "outputPath": "inventory/campaign-readiness.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:campaign-refresh", "template": "inventory-campaign-refresh.md", "outputPath": "inventory/campaign-refresh.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:mobile-nav", "template": "inventory-mobile-nav.md", "outputPath": "inventory/mobile-nav.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:notification-state", "template": "inventory-notification-state.md", "outputPath": "inventory/notification-state.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:text-format", "template": "inventory-text-format.md", "outputPath": "inventory/text-format.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:staleness", "template": "inventory-staleness.md", "outputPath": "inventory/staleness.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:api-pipeline-start", "template": "inventory-api-pipeline-start.md", "outputPath": "inventory/api-pipeline-start.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:expert-contract", "template": "inventory-expert-contract.md", "outputPath": "inventory/expert-contract.jsonl", "wave": "inventory-main" }
+      ]
+    },
+    {
+      "name": "diagnose",
+      "taskKind": "artifact",
+      "agentRole": "diagnose-auditor",
+      "completionMarker": "jsonl-summary",
+      "tasks": [
+        { "taskId": "diagnose:failure-chains", "template": "diagnose-failure-chains.md", "outputPath": "diagnose/failure-chains.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:assistant-handoff", "template": "diagnose-assistant-handoff.md", "outputPath": "diagnose/assistant-handoff.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:task-lifecycle", "template": "diagnose-task-lifecycle.md", "outputPath": "diagnose/task-lifecycle.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:ui-parity", "template": "diagnose-ui-parity.md", "outputPath": "diagnose/ui-parity.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:campaign-readiness-logic", "template": "diagnose-campaign-readiness.md", "outputPath": "diagnose/campaign-readiness.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:expert-delegation", "template": "diagnose-expert-delegation.md", "outputPath": "diagnose/expert-delegation.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:text-formatting", "template": "diagnose-text-format.md", "outputPath": "diagnose/text-format.jsonl", "wave": "diagnose-main" }
+      ]
+    },
+    {
+      "name": "plan",
+      "taskKind": "artifact",
+      "agentRole": "synthesizer",
+      "tasks": [
+        { "taskId": "plan:synthesis-runtime", "template": "synthesize-runtime.md", "outputPath": "plan/synthesis-runtime.md", "completionMarker": "status-line", "wave": "plan-main" },
+        { "taskId": "plan:synthesis-ai", "template": "synthesize-ai-orchestration.md", "outputPath": "plan/synthesis-ai-orchestration.md", "completionMarker": "status-line", "wave": "plan-main" },
+        { "taskId": "plan:synthesis-ui", "template": "synthesize-ui-reliability.md", "outputPath": "plan/synthesis-ui-reliability.md", "completionMarker": "status-line", "wave": "plan-main" },
+        { "taskId": "plan:synthesis-jobs", "template": "synthesize-job-lifecycle.md", "outputPath": "plan/synthesis-job-lifecycle.md", "completionMarker": "status-line", "wave": "plan-main" },
+        { "taskId": "plan:ecosystem-handoff", "template": "ecosystem-handoff.json", "outputPath": "plan/ecosystem-handoff.json", "completionMarker": "exists", "wave": "plan-followup", "dependsOn": ["plan:synthesis-runtime", "plan:synthesis-ai", "plan:synthesis-ui", "plan:synthesis-jobs"] },
+        { "taskId": "plan:issues", "template": "assemble-issues.md", "outputPath": "issues/issues.jsonl", "completionMarker": "jsonl-summary", "wave": "plan-followup", "dependsOn": ["plan:ecosystem-handoff"] },
+        { "taskId": "plan:enrich-issues", "template": "enrich-issues.md", "outputPath": "issues/issues-enriched.jsonl", "completionMarker": "jsonl-summary", "wave": "issues-followup", "dependsOn": ["plan:issues"] },
+        { "taskId": "plan:principles-audit", "template": "principles-audit.md", "outputPath": "plan/principles-audit.md", "completionMarker": "status-line", "wave": "plan-followup", "dependsOn": ["plan:issues"], "agentRole": "principles-auditor" }
+      ]
+    },
+    {
+      "name": "spec",
+      "taskKind": "artifact",
+      "agentRole": "spec-writer",
+      "tasks": [
+        { "taskId": "spec:universal-spec", "template": "convert-to-spec.md", "outputPath": "spec/universal-spec.md", "completionMarker": "status-line", "wave": "spec-main", "dependsOn": ["plan:synthesis-runtime", "plan:synthesis-ai", "plan:synthesis-ui", "plan:synthesis-jobs", "plan:principles-audit", "plan:issues", "plan:enrich-issues"] }
+      ]
+    }
+  ]
+}

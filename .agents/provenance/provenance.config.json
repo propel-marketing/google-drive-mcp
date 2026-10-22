@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "neverControlsWorkflow": true,
+  "maxFieldBytes": 65536,
+  "paths": {
+    "ledger": ".agents/data/provenance/provenance.db",
+    "jsonlDirectory": ".agents/data/provenance/jsonl",
+    "actorStateDirectory": ".agents/data/provenance/actors",
+    "modelCacheDirectory": ".agents/data/provenance/models"
+  },
+  "jsonl": {
+    "lockRetryCount": 10,
+    "lockRetryDelayMs": 25,
+    "staleLockMs": 30000
+  },
+  "embeddings": {
+    "modelId": "Xenova/all-MiniLM-L6-v2",
+    "pooling": "mean",
+    "normalize": true,
+    "runInsideCaptureHook": false
+  },
+  "captureEvents": {
+    "codex": [
+      "SessionStart",
+      "UserPromptSubmit",
+      "PreToolUse",
+      "PermissionRequest",
+      "PostToolUse",
+      "PreCompact",
+      "PostCompact",
+      "SubagentStart",
+      "SubagentStop",
+      "Stop"
+    ],
+    "claude-code": [
+      "SessionStart",
+      "UserPromptSubmit",
+      "PreToolUse",
+      "PostToolUse",
+      "PostToolUseFailure",
+      "SubagentStart",
+      "SubagentStop",
+      "Stop",
+      "PreCompact",
+      "PostCompact",
+      "SessionEnd"
+    ]
+  }
+}

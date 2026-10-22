@@ -1,0 +1,77 @@
+{
+  "kind": "workflow",
+  "description": "Managed workflow design stages",
+  "stages": [
+    {
+      "name": "expert-probe",
+      "taskId": "workflow:expert-probe",
+      "taskKind": "artifact",
+      "agentRole": "architecture",
+      "template": "workflow/expert-probe",
+      "outputPath": "design/expert-probe.md",
+      "completionMarker": "exists"
+    },
+    {
+      "name": "preflight",
+      "taskId": "workflow:preflight",
+      "taskKind": "artifact",
+      "agentRole": "architecture",
+      "template": "workflow/preflight",
+      "outputPath": "design/preflight.md",
+      "completionMarker": "exists",
+      "dependsOn": ["workflow:expert-probe"]
+    },
+    {
+      "name": "trace",
+      "taskId": "workflow:trace",
+      "taskKind": "artifact",
+      "agentRole": "architecture",
+      "template": "workflow/trace",
+      "outputPath": "design/trace.md",
+      "completionMarker": "exists",
+      "dependsOn": ["workflow:preflight"],
+      "optional": true
+    },
+    {
+      "name": "research",
+      "taskId": "workflow:research",
+      "taskKind": "artifact",
+      "agentRole": "architecture",
+      "template": "workflow/research",
+      "outputPath": "design/research.md",
+      "completionMarker": "exists",
+      "dependsOn": ["workflow:preflight"],
+      "optional": true
+    },
+    {
+      "name": "context-acquisition",
+      "taskId": "workflow:context-acquisition",
+      "taskKind": "artifact",
+      "agentRole": "architecture",
+      "template": "workflow/context-acquisition",
+      "outputPath": "design/context-acquisition.md",
+      "completionMarker": "exists",
+      "dependsOn": ["workflow:preflight"]
+    },
+    {
+      "name": "design-draft",
+      "taskId": "workflow:design-draft",
+      "taskKind": "artifact",
+      "agentRole": "architecture",
+      "template": "workflow/design-draft",
+      "outputPath": "design/design-draft.md",
+      "completionMarker": "exists",
+      "dependsOn": ["workflow:context-acquisition"]
+    },
+    {
+      "name": "universal-spec",
+      "taskId": "workflow:universal-spec",
+      "taskKind": "artifact",
+      "agentRole": "architecture",
+      "template": "workflow/universal-spec",
+      "outputPath": "spec/universal-spec.md",
+      "completionMarker": "exists",
+      "dependsOn": ["workflow:design-draft"]
+    }
+  ]
+}

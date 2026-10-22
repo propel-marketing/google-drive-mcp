@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__memory-bank",
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "mcp__plugin_context-mode_context-mode__ctx_execute",
+      "mcp__plugin_context-mode_context-mode__ctx_execute_file",
+      "Read",
+      "Write",
+      "Edit",
+      "WebSearch",
+      "Bash(npm test *)",
+      "Bash(npm run *)",
+      "Bash(uv run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(node scripts/init.mjs)",
+      "Bash(./.agents/provenance/node_modules/.bin/tsx --test .claude/tests/*.test.ts)",
+      "Bash(node .agents/provenance/node_modules/tsx/dist/cli.mjs .agents/provenance/provenance-cli.ts events --event-name PreCompact --limit 5)",
+      "Bash(node .agents/provenance/node_modules/tsx/dist/cli.mjs .agents/provenance/provenance-cli.ts ledger-status)",
+      "Bash(node .agents/provenance/node_modules/tsx/dist/cli.mjs .agents/provenance/provenance-cli.ts events --limit 4)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(echo \"exit=$?\")",
+      "Bash(grep -v '^$')",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}

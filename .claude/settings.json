@@ -1,4 +1,246 @@
 {
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/run-codex-guard.ts",
+              "agent_runtime_policy"
+            ],
+            "timeout": 5,
+            "statusMessage": "Checking Codex agent runtime policy"
+          }
+        ]
+      },
+      {
+        "matcher": "apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/run-codex-guard.ts",
+              "comment_guard"
+            ],
+            "timeout": 5,
+            "statusMessage": "Checking comment policy"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/run-codex-guard.ts",
+              "task_completion_ping"
+            ],
+            "timeout": 10,
+            "statusMessage": "Capturing managed task completion"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/run-codex-guard.ts",
+              "managed_plan_stop_gate"
+            ],
+            "timeout": 10,
+            "statusMessage": "Checking managed plan completeness"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.agents/provenance/node_modules/tsx/dist/cli.mjs",
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/provenance.ts"
+            ],
+            "timeout": 5,
+            "asyncRewake": true
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "deny": [
       "Edit(node_modules/**)",

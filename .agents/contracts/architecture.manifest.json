@@ -1,0 +1,132 @@
+{
+  "kind": "architecture",
+  "description": "Managed architecture audit phase graph",
+  "phases": [
+    {
+      "name": "inventory",
+      "taskKind": "artifact",
+      "agentRole": "inventory-auditor",
+      "completionMarker": "jsonl-summary",
+      "tasks": [
+        { "taskId": "inventory:enums", "template": "inventory-enums.md", "outputPath": "inventory/enums.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:classes", "template": "inventory-classes.md", "outputPath": "inventory/classes.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:structures", "template": "inventory-structures.md", "outputPath": "inventory/structures.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:schemas", "template": "inventory-schemas.md", "outputPath": "inventory/schemas.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:types", "template": "inventory-types.md", "outputPath": "inventory/types.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:interfaces", "template": "inventory-interfaces.md", "outputPath": "inventory/interfaces.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:entry-points", "template": "inventory-entry-points.md", "outputPath": "inventory/entry-points.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:folder-structure", "template": "inventory-folder-structure.md", "outputPath": "inventory/folder-structure.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:file-structure", "template": "inventory-file-structure.md", "outputPath": "inventory/file-structure.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:type-aliases", "template": "inventory-type-aliases.md", "outputPath": "inventory/type-aliases.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:type-dissolution", "template": "inventory-type-dissolution.md", "outputPath": "inventory/type-dissolution.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:type-operations", "template": "inventory-type-operations.md", "outputPath": "inventory/type-operations.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:result-types", "template": "inventory-result-types.md", "outputPath": "inventory/result-types.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:data-transfer-objects", "template": "inventory-data-transfer-objects.md", "outputPath": "inventory/data-transfer-objects.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:domain-models", "template": "inventory-domain-models.md", "outputPath": "inventory/domain-models.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:observability", "template": "inventory-observability.md", "outputPath": "inventory/observability.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:log-calls", "template": "inventory-log-calls.md", "outputPath": "inventory/log-calls.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:metric-emissions", "template": "inventory-metric-emissions.md", "outputPath": "inventory/metric-emissions.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:trace-spans", "template": "inventory-trace-spans.md", "outputPath": "inventory/trace-spans.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:error-types", "template": "inventory-error-types.md", "outputPath": "inventory/error-types.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:error-reports", "template": "inventory-error-reports.md", "outputPath": "inventory/error-reports.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:try-catch-flow", "template": "inventory-try-catch-flow.md", "outputPath": "inventory/try-catch-flow.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:external-imports", "template": "inventory-external-imports.md", "outputPath": "inventory/external-imports.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:internal-imports", "template": "inventory-internal-imports.md", "outputPath": "inventory/internal-imports.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:magic-numbers", "template": "inventory-magic-numbers.md", "outputPath": "inventory/magic-numbers.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:magic-strings", "template": "inventory-magic-strings.md", "outputPath": "inventory/magic-strings.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:config", "template": "inventory-config.md", "outputPath": "inventory/config.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:tests", "template": "inventory-tests.md", "outputPath": "inventory/tests.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:state-shapes", "template": "inventory-state-shapes.md", "outputPath": "inventory/state-shapes.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:event-shapes", "template": "inventory-event-shapes.md", "outputPath": "inventory/event-shapes.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:feature-flags", "template": "inventory-feature-flags.md", "outputPath": "inventory/feature-flags.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:frontend-components", "template": "inventory-frontend-components.md", "outputPath": "inventory/frontend-components.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:frontend-hooks", "template": "inventory-frontend-hooks.md", "outputPath": "inventory/frontend-hooks.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:frontend-state", "template": "inventory-frontend-state.md", "outputPath": "inventory/frontend-state.jsonl", "wave": "inventory-main" },
+        { "taskId": "inventory:frontend-render-boundaries", "template": "inventory-frontend-render-boundaries.md", "outputPath": "inventory/frontend-render-boundaries.jsonl", "wave": "inventory-main" },
+        {
+          "taskId": "inventory:test-surface",
+          "template": "inventory-test-surface.md",
+          "outputPath": "inventory/test-surface.jsonl",
+          "wave": "inventory-followup",
+          "dependsOn": [
+            "inventory:tests",
+            "inventory:entry-points",
+            "inventory:file-structure",
+            "inventory:frontend-components"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "diagnose",
+      "taskKind": "artifact",
+      "agentRole": "diagnose-auditor",
+      "completionMarker": "jsonl-summary",
+      "tasks": [
+        { "taskId": "diagnose:grep-test", "template": "diagnose-grep-test.md", "outputPath": "diagnose/grep-test.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:variable-audit", "template": "diagnose-variable-audit.md", "outputPath": "diagnose/variable-audit.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:glossary-alignment", "template": "diagnose-glossary-alignment.md", "outputPath": "diagnose/glossary-alignment.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:trace", "template": "diagnose-trace.md", "outputPath": "diagnose/trace.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:type-dissolution", "template": "diagnose-type-dissolution.md", "outputPath": "diagnose/type-dissolution.jsonl", "wave": "diagnose-followup", "dependsOn": ["diagnose:trace"] },
+        { "taskId": "diagnose:schema-derivation", "template": "diagnose-schema-derivation.md", "outputPath": "diagnose/schema-derivation.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:boundary-completeness", "template": "diagnose-boundary-completeness.md", "outputPath": "diagnose/boundary-completeness.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:endpoint-drillability", "template": "diagnose-endpoint-drillability.md", "outputPath": "diagnose/endpoint-drillability.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:interface-gaps", "template": "diagnose-interface-gaps.md", "outputPath": "diagnose/interface-gaps.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:orchestration-seam", "template": "diagnose-orchestration-seam.md", "outputPath": "diagnose/orchestration-seam.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:external-boundary", "template": "diagnose-external-boundary.md", "outputPath": "diagnose/external-boundary.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:size-distribution", "template": "diagnose-size-distribution.md", "outputPath": "diagnose/size-distribution.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:folder-organization", "template": "diagnose-folder-organization.md", "outputPath": "diagnose/folder-organization.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:index-file-shape", "template": "diagnose-index-file-shape.md", "outputPath": "diagnose/index-file-shape.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:naming-specificity", "template": "diagnose-naming-specificity.md", "outputPath": "diagnose/naming-specificity.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:composition-root", "template": "diagnose-composition-root.md", "outputPath": "diagnose/composition-root.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:responsibility-scatter", "template": "diagnose-scatter.md", "outputPath": "diagnose/responsibility-scatter.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:dead-code", "template": "diagnose-dead-code.md", "outputPath": "diagnose/dead-code.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:decision-log", "template": "diagnose-decision-log.md", "outputPath": "diagnose/decision-log.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:frontend-prop-drilling", "template": "diagnose-frontend-prop-drilling.md", "outputPath": "diagnose/frontend-prop-drilling.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:frontend-render-boundary-correctness", "template": "diagnose-frontend-render-boundary-correctness.md", "outputPath": "diagnose/frontend-render-boundary-correctness.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:frontend-component-size-distribution", "template": "diagnose-frontend-component-size-distribution.md", "outputPath": "diagnose/frontend-component-size-distribution.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:frontend-dead-components", "template": "diagnose-frontend-dead-components.md", "outputPath": "diagnose/frontend-dead-components.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:test-architecture-tier-presence", "template": "diagnose-test-architecture-tier-presence.md", "outputPath": "diagnose/test-architecture-tier-presence.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:test-architecture-folder-mirror", "template": "diagnose-test-architecture-folder-mirror.md", "outputPath": "diagnose/test-architecture-folder-mirror.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:test-architecture-runner-coherence", "template": "diagnose-test-architecture-runner-coherence.md", "outputPath": "diagnose/test-architecture-runner-coherence.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:test-architecture-infrastructure-completeness", "template": "diagnose-test-architecture-infrastructure-completeness.md", "outputPath": "diagnose/test-architecture-infrastructure-completeness.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:test-architecture-mock-usage", "template": "diagnose-test-architecture-mock-usage.md", "outputPath": "diagnose/test-architecture-mock-usage.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:test-architecture-coverage-vs-journeys", "template": "diagnose-test-architecture-coverage-vs-journeys.md", "outputPath": "diagnose/test-architecture-coverage-vs-journeys.jsonl", "wave": "diagnose-main" },
+        { "taskId": "diagnose:test-architecture-coverage-vs-mover", "template": "diagnose-test-architecture-coverage-vs-mover.md", "outputPath": "diagnose/test-architecture-coverage-vs-mover.jsonl", "wave": "diagnose-main" }
+      ]
+    },
+    {
+      "name": "plan",
+      "taskKind": "artifact",
+      "agentRole": "synthesizer",
+      "tasks": [
+        { "taskId": "plan:synthesis-vocabulary-type", "template": "synthesize-vocabulary-type.md", "outputPath": "plan/synthesis-vocabulary-type.md", "completionMarker": "status-line", "wave": "plan-main" },
+        { "taskId": "plan:synthesis-boundary", "template": "synthesize-boundary.md", "outputPath": "plan/synthesis-boundary.md", "completionMarker": "status-line", "wave": "plan-main" },
+        { "taskId": "plan:synthesis-structural", "template": "synthesize-structural.md", "outputPath": "plan/synthesis-structural.md", "completionMarker": "status-line", "wave": "plan-main" },
+        { "taskId": "plan:synthesis-coverage", "template": "synthesize-coverage.md", "outputPath": "plan/synthesis-coverage.md", "completionMarker": "status-line", "wave": "plan-main" },
+        { "taskId": "plan:synthesis-frontend", "template": "synthesize-frontend.md", "outputPath": "plan/synthesis-frontend.md", "completionMarker": "status-line", "wave": "plan-main" },
+        { "taskId": "plan:synthesis-test", "template": "synthesize-test.md", "outputPath": "plan/synthesis-test.md", "completionMarker": "status-line", "wave": "plan-main" },
+        { "taskId": "plan:ecosystem-handoff", "template": "ecosystem-handoff.md", "outputPath": "plan/ecosystem-handoff.json", "completionMarker": "status-line", "wave": "plan-followup", "dependsOn": ["plan:synthesis-vocabulary-type", "plan:synthesis-boundary", "plan:synthesis-structural", "plan:synthesis-coverage", "plan:synthesis-frontend", "plan:synthesis-test"] },
+        { "taskId": "plan:principles-audit", "template": "adw-principles-audit.md", "outputPath": "plan/principles-audit.md", "completionMarker": "status-line", "wave": "plan-followup", "agentRole": "principles-auditor", "dependsOn": ["plan:synthesis-vocabulary-type", "plan:synthesis-boundary", "plan:synthesis-structural", "plan:synthesis-coverage", "plan:synthesis-frontend", "plan:synthesis-test"] }
+      ]
+    },
+    {
+      "name": "issues",
+      "taskKind": "artifact",
+      "agentRole": "synthesizer",
+      "completionMarker": "jsonl-summary",
+      "tasks": [
+        { "taskId": "issues:issues", "template": "assemble-issues.md", "outputPath": "issues/issues.jsonl", "wave": "issues-main", "dependsOn": ["plan:ecosystem-handoff"] },
+        { "taskId": "issues:issues-enriched", "template": "enrich-issues.md", "outputPath": "issues/issues-enriched.jsonl", "wave": "issues-followup", "dependsOn": ["issues:issues"] }
+      ]
+    },
+    {
+      "name": "spec",
+      "taskKind": "artifact",
+      "agentRole": "spec-writer",
+      "tasks": [
+        { "taskId": "spec:universal-spec", "template": "convert-to-spec.md", "outputPath": "spec/universal-spec.md", "completionMarker": "status-line", "wave": "spec-main", "dependsOn": ["plan:synthesis-vocabulary-type", "plan:synthesis-boundary", "plan:synthesis-structural", "plan:synthesis-coverage", "plan:synthesis-frontend", "plan:synthesis-test", "plan:principles-audit", "issues:issues", "issues:issues-enriched"] }
+      ]
+    }
+  ]
+}

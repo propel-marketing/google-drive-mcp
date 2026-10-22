@@ -1,0 +1,4 @@
+set -o pipefail
+log="$HOME/Desktop/adw-init-$(date +%Y%m%d-%H%M%S).log"
+NO_COLOR=1 node scripts/init.mjs --check 2>&1 | tee "$log"
+echo "Full output saved to: $log"

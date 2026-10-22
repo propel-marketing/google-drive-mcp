@@ -1,0 +1,438 @@
+{
+  "schemaVersion": 1,
+  "changes": [
+    {
+      "path": "AGENTS.md",
+      "baselineSha256": "fee04d2f7e5bf0ed293506f2b5d5d0e23b00692544e05dd061f73ed49a28c084",
+      "approvedSha256": "0b07f69f8408925b2f95aadbc6b10285324832dce59757542dfcf73ff34661fb",
+      "approvalReference": "User approvals on 2026-07-18 and 2026-07-23; Memory Bank requirement record_19f8887ba1894254; user instruction on 2026-10-17 to port the spec-and-execute skill upstream (Memory Bank record_4bc50fd6acac4676); user instruction on 2026-10-17 to add a Project Structure section with the folder and worktree rules; user instruction on 2026-10-17 to implement the Engineering Doctrine (Memory Bank requirement record_b0dabbd97ce6415c, decision record_7818478cf518497e); user instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Remove the inherited legacy Vercel project mapping while preserving the deployment safety guard, require descriptive labels on every R-item reference, document the spec-and-execute expedited path in the core system list and the default workflow, add the Project Structure section (compact repository tree plus the one-folder-per-repository and in-repo worktree rules), add the Engineering Doctrine section (six doctrines with stable IDs and the conflict priority), and replace the root-prefixed task runtime commands with the root-free node plus tsx entry point form run from the repository root. Prescribe the file-based completion payloads and multi-path logging first, with the inline form as the accepted alternative.",
+      "behaviorImpact": "none",
+      "verificationCommands": [
+        "git diff a77db8afcec4c8e5dface3ec768b51d3c181c56b -- AGENTS.md",
+        "tsx .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/INSTALL.md",
+      "baselineSha256": "5c392982e1adb025d2aaeac340872e0e872d66b0e78ba019e6fcb61d05805c25",
+      "approvedSha256": "e818b9613039144e0360f4cf71c87b0ee0ce420120e40936a19e4b5a491bc8e0",
+      "approvalReference": "User approval in implementation task on 2026-07-18",
+      "reason": "Remove inherited legacy installer attribution without changing installation behavior.",
+      "behaviorImpact": "none",
+      "verificationCommands": [
+        "git diff a77db8afcec4c8e5dface3ec768b51d3c181c56b -- .agents/INSTALL.md",
+        "tsx .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/config.toml",
+      "baselineSha256": "14afaf1c882a2a63b8977249cc0635aed1fd0f7c0aef48eeb32bc4de06648d84",
+      "approvedSha256": "dc7b5c6030e16c18aa6f5c3fead0bad0769eea8f66813aef661addd14beff756",
+      "approvalReference": "User approval in implementation task on 2026-07-18",
+      "reason": "Register passive Codex provenance capture for ten approved lifecycle events without changing or reordering the existing guard hooks.",
+      "behaviorImpact": "additive-observability",
+      "verificationCommands": [
+        "git diff a77db8afcec4c8e5dface3ec768b51d3c181c56b -- .codex/config.toml",
+        "tsx .claude/compatibility/verify-claude-mirrors.ts --identity-clean",
+        "npm test --prefix .agents/provenance"
+      ]
+    },
+    {
+      "path": ".gitignore",
+      "baselineSha256": "650dab2ab96371d585d819ef65740823ae8f3b785a3c0614b152dc7107715e41",
+      "approvedSha256": "470ed9729908f331cec113288a845e33791b8783abf2d3974a18c95c258f4819",
+      "approvalReference": "User request to create a private GitHub repository and ignore secrets on 2026-07-18",
+      "reason": "Ignore common local credential files, authentication state, and private-key formats before publishing the private repository.",
+      "behaviorImpact": "none",
+      "verificationCommands": [
+        "git check-ignore -v --no-index .env .npmrc credentials.json private.pem .claude/settings.local.json",
+        "tsx .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/skills/task-orchestration/SKILL.md",
+      "baselineSha256": "b3bfafd39cd7a8fd5a8257c7260eecb7be75ad973183dcf33f8de7aaa0d2dba4",
+      "approvedSha256": "7dcaefcc6183be9cce49c2c62c5481769266df6dd53c6aa8151c361bb177fd4a",
+      "approvalReference": "User approval in implementation task on 2026-10-16; user instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Rename the reviewer output from report.md to review-report.md and record the agent-output naming rule, because Claude Code refuses subagent writes to report.md, findings.md, summary.md and analysis.md, and replace every CODEX_AGENT_ROOT-prefixed command and absolute CODEBASE_PATH reference with the root-free form run from the codebase root and relative plan roots under .agents/runs. Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx. Prescribe the file-based completion payloads and multi-path logging first, with the inline form as the accepted alternative.",
+      "behaviorImpact": "required-compatibility",
+      "verificationCommands": [
+        "git diff a5dd938 -- .agents/skills/task-orchestration/SKILL.md",
+        "tsx .claude/compatibility/verify-claude-mirrors.ts"
+      ]
+    },
+    {
+      "path": ".codex/agents/researcher.toml",
+      "baselineSha256": "1010e9734db02b0de32e6f396148b2225a2b1cac388ea0ff0359e548369ee55b",
+      "approvedSha256": "22a9e67b90bd9acc775e127e66af6ac507c392f82a7dbb51cbe1d483693ccb49",
+      "approvalReference": "User approval in implementation task on 2026-10-16; User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Forbid research output topics named report, findings, summary or analysis, because Claude Code refuses subagent writes to those exact file names. Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "required-compatibility",
+      "verificationCommands": [
+        "git diff a5dd938 -- .codex/agents/researcher.toml",
+        "tsx .claude/compatibility/verify-claude-mirrors.ts"
+      ]
+    },
+    {
+      "path": "package.json",
+      "baselineSha256": "8e11b19582dcb3ea0bfb891c01d10b38315b0d42e3ead7c136eb08a2bc60a6bc",
+      "approvedSha256": "ee38b7f3c7c8fa0b22d92b59d8851f598639d1578f5b9cfd01a2b526448b3356",
+      "approvalReference": "User-approved ADW improvement program Phase 0 on 2026-10-17; Memory Bank record_3bc49f1322174ae0",
+      "reason": "Add the test:runtime script that runs the runtime script test lane; no dependency or version change",
+      "behaviorImpact": "none",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/scripts/README.md",
+      "baselineSha256": "bbedb41b7c8ad4c62c1e728c60357ac8be8e5bd5472e6926ade30a6f18a0811f",
+      "approvedSha256": "7d5c0c8e723da7e20763ab9e284efab58b0cdf4848c8ad6711cabcd0a8489986",
+      "approvalReference": "User-approved ADW improvement program Phase 0 on 2026-10-17; Memory Bank record_3bc49f1322174ae0",
+      "reason": "Document the runtime test lane in the scripts guide; no tool or packaging change",
+      "behaviorImpact": "none",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/scripts/tasks.ts",
+      "baselineSha256": "1a499e5ab41bdc770389a9e287a8d53b6764b8eb81003d566dc10c7ffbca4093",
+      "approvedSha256": "5dcdca6f6db8307bae6cbf82a9820e1423585b1b2c36d0eb2c89aee998d0e6d2",
+      "approvalReference": "User instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Validate the project root from CODEX_AGENT_ROOT or the current directory and the --plan slug in a preAction hook before any filesystem or database access, reporting failures as structured JSON errors. Accept several --path values on log-read and log-mutation and read the completion payloads from --discovered-context-file and --self-audit-file as alternatives to the inline JSON options.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/scripts/runner-helpers.ts",
+      "baselineSha256": "a1c34a355719d82323ce42e66d94368987613e3366b078237ee0d8884beeba87",
+      "approvedSha256": "f402054ddc42786636a915de15869b1af3c293c54d687d958935766af76371a2",
+      "approvalReference": "User instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e)",
+      "reason": "Validate the project root once per process, resolve plan roots within .agents/runs, spawn tasks.ts portably through process.execPath and the local tsx entry point, and store the active-plan registry outputDir as a relative path.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/scripts/task-orchestration-runner.ts",
+      "baselineSha256": "83b6765d5d4701d1555282697184a81e194f3c07f972b22fb5ec8bc1c7fb8598",
+      "approvedSha256": "fc8eafa86e0260316dfd1c1685c9fc570266ad39e43dd73e53eafc88d6f42929",
+      "approvalReference": "User instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e); Phase 1 follow-ups on 2026-10-18 as managed plan adw-phase1-followups (PR #8 deferred-work item 2; Memory Bank topic_6fdf1a42d03f4b9e)",
+      "reason": "Validate --plan-name as a plan slug, resolve --plan-root within .agents/runs, and exit with a structured runtime-path error instead of a stack trace. Validate --plan-name before deriving the plan root so an explicit --plan-root no longer bypasses the slug check and the refusal stays structured JSON.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/scripts/workflow-runner.ts",
+      "baselineSha256": "70f18812c693b3a0c593a1dd3e3c896ca84d1d5ed52908d44072f3684818b049",
+      "approvedSha256": "088222d827b04ef5b02fd3345ea95bab341a394981c0750a69de8002a14b048a",
+      "approvalReference": "User instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e); Phase 1 follow-ups on 2026-10-18 as managed plan adw-phase1-followups (PR #8 deferred-work item 2; Memory Bank topic_6fdf1a42d03f4b9e)",
+      "reason": "Validate --plan-name as a plan slug, resolve --plan-root within .agents/runs, and exit with a structured runtime-path error instead of a stack trace. Validate --plan-name before deriving the plan root so an explicit --plan-root no longer bypasses the slug check and the refusal stays structured JSON.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/scripts/architecture-runner.ts",
+      "baselineSha256": "abbd3a11bf5f3384f47d3c6becb56bbf7e09d3093deac9952752184fff7f784f",
+      "approvedSha256": "3e663fc3fb66c2edfe50febc726daf39f0283e64b0b4b690300c1ff11d51980d",
+      "approvalReference": "User instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e)",
+      "reason": "Validate --plan-name and --feature-slug as plan slugs and --date as a date token, resolve every output directory within .agents/runs, and exit with a structured runtime-path error instead of a stack trace.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/hooks/task_completion_ping.ts",
+      "baselineSha256": "b06e4bbb48dd7e9810f175a116193ed408e64320de068aaad80c3bf26ff4efa2",
+      "approvedSha256": "3435656d8ed046506fdfe23f00e917eb0020509eb4b39bf50cc149e657be772f",
+      "approvalReference": "User instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e)",
+      "reason": "Accept only plan names matching the standalone PLAN_TOKEN_PATTERN before joining them into a plan path and spawn tasks.ts portably through process.execPath and the repository's tsx entry point, without importing from .agents/scripts.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/hooks/managed_plan_stop_gate.ts",
+      "baselineSha256": "30f1bcf47493d73647e4cefbe32a408154379fadd49694eb6098abc807b864a7",
+      "approvedSha256": "78ed9d711f98adae8e7beb06ac36c5efdaccfe40b996441df73fc7cc5c1d3987",
+      "approvalReference": "User instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e)",
+      "reason": "Spawn tasks.ts portably through process.execPath and the repository's tsx entry point instead of a tsx binary on PATH, skipping the summary when the entry point is absent.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/hooks/agent_runtime_policy.ts",
+      "baselineSha256": "fa162a4f7fa3c2598385b5a347d58ded825c8d1f456e510a4f5423efd97ab476",
+      "approvedSha256": "5c852c5bbe1ca166673c7bcd9c8e8bbfec530bcc4e735fbb4ca31dbddaf6fdec",
+      "approvalReference": "User instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed command in the denial text with the root-free node plus tsx entry point form and describe CODEX_AGENT_ROOT as an optional absolute-path override. Decide Edit and Write denials from the destination file_path with separators normalized, so a write that only mentions a protected path is allowed and a write to a protected path is denied on every platform.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/debt-triage.toml",
+      "baselineSha256": "cba16daa10f557cdd17c6800f6330569551abf7317860ae806a06319d00f446f",
+      "approvedSha256": "09bc01134fc3e56d048b70f579baaf0c2d71df5d4c0a86ed56d962ffdab6886f",
+      "approvalReference": "User instruction on 2026-10-17 to execute Phase 1 of the ADW improvement program (Memory Bank record_9bc38c35c1e8494c; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed tasks.ts commands with the root-free node plus tsx entry point form run from the codebase root. Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/adw-scenario-writer.toml",
+      "baselineSha256": "f24711524dade44ec9cc5334017ac88a6caa825d789ddd554b51b90eda153bb0",
+      "approvedSha256": "b7bab22edb0d76d979c77e1f42008fdbb2300392116adc2e409dfb9e9f42e173",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx. Show the completion payloads as files under the task's agent-outputs directory in every completion example, and record review notes through tasks.ts update instead of an option tasks.ts complete rejects.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/adw-tester.toml",
+      "baselineSha256": "db0d7d6766f0e4466326c4e06fd172d0a2d17478a457645844cc35963eafb76f",
+      "approvedSha256": "044332e6f61b9a8e7625e0421bc04bfb352b848c96ca6502a76fa5791f0539ac",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/architecture.toml",
+      "baselineSha256": "4594ca6e8fff5897cb5d40f6307c970e8cd48ff2a464337df3b127c2a2f3c87f",
+      "approvedSha256": "9020fc5c68631f6a0f18ea20ccdf6b6ddcf812a56fea8c3a4255da9cff4e5441",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/auditor.toml",
+      "baselineSha256": "6900960280273fc0dde809ef6fda6b229e29c784d3e9d898736382cb46ed5354",
+      "approvedSha256": "de5ccadb18bb7c7cb2ffbc6a7573174703fefcca8fce15a5a70468f137291f80",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/builder.toml",
+      "baselineSha256": "9c5a4a8eb1c477d1ee11225c27c6380a3c370b667c67c46eb7f755e35b33b482",
+      "approvedSha256": "5c05fc02661082847937ba19e5e9d4068874a8df003b5af19a737715d1ca11c9",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx. Prescribe the file-based completion payloads and multi-path logging first, with the inline form as the accepted alternative.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/forge-agent.toml",
+      "baselineSha256": "251598839139661c6d673b5a02318f4cd4396c0ee0e49d9fbf640fd62b57360e",
+      "approvedSha256": "fe6b181d827facbd05b7ef36cda668a085d01c8f21303c1a3a519b832f1e2756",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/generate-expert.toml",
+      "baselineSha256": "f5dc18a8df6da778b43a238338ea0f7f25063692661359fd947cc83d3ced1a58",
+      "approvedSha256": "a01cc26e391aa6803f5d7ab3d30b0c4f45debf0387c764ebaf4bffbea58b01fd",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/live-runner.toml",
+      "baselineSha256": "7b939b06ffe5c342ffbe1f3e916944925e04185878950c5b539aed28a4cfbbab",
+      "approvedSha256": "ad201f5975bbb76c1dc0780d2200556b1e43cfce940b2a2ce43d3469eec00035",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx. Show the completion payloads as files under the task's agent-outputs directory in every completion example, and record review notes through tasks.ts update instead of an option tasks.ts complete rejects.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/log-auditor.toml",
+      "baselineSha256": "d71ae3b13764dc9e4acbfe2cf549b857a693b510e5afcc14654c9c96342216a4",
+      "approvedSha256": "7b1f83f876c9e205975232c52665837e15088752242be51effe12957181d5e9e",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx. Show the completion payloads as files under the task's agent-outputs directory in every completion example, and record review notes through tasks.ts update instead of an option tasks.ts complete rejects.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/scenario-writer.toml",
+      "baselineSha256": "2720eec2e8273836763355ee3f69ef58c0632c19712a3e32600d6bb9a49ddca4",
+      "approvedSha256": "e8a85c642ce97cb157121d9f15e44bb5513b0c0412e9c06931f424fe21907615",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx. Show the completion payloads as files under the task's agent-outputs directory in every completion example, and record review notes through tasks.ts update instead of an option tasks.ts complete rejects.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/silent-failure-hunter.toml",
+      "baselineSha256": "2c00bb8e7007ae21b52b683e45345015fe64a54dd7b12d551db3403694e1791d",
+      "approvedSha256": "004b79af950057ec4269ff1117efeaa51cbbebfc59946b8f725f4ed10366bff9",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx. Show the completion payloads as files under the task's agent-outputs directory in every completion example, and record review notes through tasks.ts update instead of an option tasks.ts complete rejects.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/task-reviewer.toml",
+      "baselineSha256": "fd1b08bbca1fafdb6b76a421eedd36bbead1f5aa58e6592f8754735762541a0e",
+      "approvedSha256": "c35a3ffd94489cd2caf0393f7c7e0404292984c1c07477bf13913a781bb1d0fa",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/test-creator.toml",
+      "baselineSha256": "b45edd72bfff2979577e0428d5aa25c0f4e7730fa140cf1ca06cab6fe4a1f05a",
+      "approvedSha256": "d89eabe7e38c5d9dfb9bb8170318580851be119f23976e59db40584243839bea",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx. Show the completion payloads as files under the task's agent-outputs directory in every completion example, and record review notes through tasks.ts update instead of an option tasks.ts complete rejects.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/test-resolver.toml",
+      "baselineSha256": "19b0dd472bba60961f278d0dbd9d46fd7b2c757a46d6d77439b414b337eeaa9e",
+      "approvedSha256": "fb5e3087e56faa94ae7c7832e4de8c01ca9f91d18754bccd91f7253f0e8efc39",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx. Show the completion payloads as files under the task's agent-outputs directory in every completion example, and record review notes through tasks.ts update instead of an option tasks.ts complete rejects.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/tester.toml",
+      "baselineSha256": "b6a1963249c0eb6a6eb71bcd01bfab7da50671d4f696118f7c3b1cd4c6c95d29",
+      "approvedSha256": "37d9266c5e3164609d866c5fb62d74f9eaab2e95e585e316995582ffa3cd5a27",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e); User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx. Show the completion payloads as files under the task's agent-outputs directory in every completion example, and record review notes through tasks.ts update instead of an option tasks.ts complete rejects.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".codex/agents/trace-scout.toml",
+      "baselineSha256": "613193be3f16a5e361d88a37f6f73b3fd4fd9e46da0bda31827c2626cded753a",
+      "approvedSha256": "46e5b1a2268a71eb9a336ace5a546071b1f37c93dd7a01b8c2e6622998261977",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/skills/architecture/SKILL.md",
+      "baselineSha256": "dcff48cb429303209da4777c08de791f7c6bb760bb7a2eef5f966b85dd25414a",
+      "approvedSha256": "eca18be209db2bc6ae783f11d07454d07bbbcbd0149f79a1c5272ab0d0143adc",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/skills/workflow/SKILL.md",
+      "baselineSha256": "42aaa7f22f0094a84ed008aafae4869d7b783ed146619b942ab74d1dae2e6fe4",
+      "approvedSha256": "cb18b1d12bf8ab2addfa6032b6e65d1784caf718dc59ddc771c15820de847023",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R2 (task CLI invocation form) of the ADW improvement program with the native baseline header and agent_runtime_policy matcher findings folded in, as managed plan adw-phase2-r2-invocation-form (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Replace the CODEX_AGENT_ROOT-prefixed bare tsx runtime commands with the root-free node plus tsx entry point form run from the repository root, which works in PowerShell and Git Bash without a globally installed tsx.",
+      "behaviorImpact": "runtime-hardening",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    },
+    {
+      "path": ".agents/scripts/audit-db.ts",
+      "baselineSha256": "b9b7afa2d945488683f79f2c03eaeb66fd54270e0d6191b047dc03d5b70290aa",
+      "approvedSha256": "1d5b9a04751f648a04ceac9b6befc0adcd8931d754afee027845131c6e313294",
+      "approvalReference": "User instruction on 2026-10-18 to execute Phase 2 R4 (task CLI ergonomics) of the ADW improvement program as managed plan adw-phase2-r4-cli-ergonomics (Memory Bank topic_6fdf1a42d03f4b9e; plan artifact_f362287bf25b407e)",
+      "reason": "Add a --help branch that prints usage to stdout and exits 0 before any database is opened.",
+      "behaviorImpact": "additive-ergonomics",
+      "verificationCommands": [
+        "npm run test:runtime",
+        "node .claude/compatibility/node_modules/tsx/dist/cli.mjs .claude/compatibility/verify-claude-mirrors.ts --identity-clean"
+      ]
+    }
+  ]
+}

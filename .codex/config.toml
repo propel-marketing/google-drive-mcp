@@ -1,0 +1,134 @@
+[features]
+hooks = true
+multi_agent = true
+
+[agents]
+max_threads = 20
+max_depth = 2
+job_max_runtime_seconds = 3600
+
+[[hooks.PreToolUse]]
+matcher = "Bash|Edit|Write|apply_patch"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = 'tsx "$(git rev-parse --show-toplevel)/.codex/hooks/agent_runtime_policy.ts"'
+timeout = 5
+statusMessage = "Checking Codex agent runtime policy"
+
+[[hooks.PreToolUse]]
+matcher = "apply_patch|Edit|Write"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = 'tsx "$(git rev-parse --show-toplevel)/.codex/hooks/comment_guard.ts"'
+timeout = 5
+statusMessage = "Checking comment policy"
+
+[[hooks.Stop]]
+matcher = "*"
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = 'tsx "$(git rev-parse --show-toplevel)/.codex/hooks/managed_plan_stop_gate.ts"'
+timeout = 10
+statusMessage = "Checking managed plan completeness"
+
+[[hooks.PostToolUse]]
+matcher = "Bash"
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = 'tsx "$(git rev-parse --show-toplevel)/.codex/hooks/task_completion_ping.ts"'
+timeout = 10
+statusMessage = "Capturing managed task completion"
+
+[[hooks.SessionStart]]
+matcher = "*"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/.agents/provenance/node_modules/tsx/dist/cli.mjs" "$(git rev-parse --show-toplevel)/.codex/hooks/provenance.ts"'
+timeout = 5
+statusMessage = "Recording Codex provenance"
+
+[[hooks.UserPromptSubmit]]
+matcher = "*"
+
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/.agents/provenance/node_modules/tsx/dist/cli.mjs" "$(git rev-parse --show-toplevel)/.codex/hooks/provenance.ts"'
+timeout = 5
+statusMessage = "Recording Codex provenance"
+
+[[hooks.PreToolUse]]
+matcher = "*"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/.agents/provenance/node_modules/tsx/dist/cli.mjs" "$(git rev-parse --show-toplevel)/.codex/hooks/provenance.ts"'
+timeout = 5
+statusMessage = "Recording Codex provenance"
+
+[[hooks.PermissionRequest]]
+matcher = "*"
+
+[[hooks.PermissionRequest.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/.agents/provenance/node_modules/tsx/dist/cli.mjs" "$(git rev-parse --show-toplevel)/.codex/hooks/provenance.ts"'
+timeout = 5
+statusMessage = "Recording Codex provenance"
+
+[[hooks.PostToolUse]]
+matcher = "*"
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/.agents/provenance/node_modules/tsx/dist/cli.mjs" "$(git rev-parse --show-toplevel)/.codex/hooks/provenance.ts"'
+timeout = 5
+statusMessage = "Recording Codex provenance"
+
+[[hooks.PreCompact]]
+matcher = "*"
+
+[[hooks.PreCompact.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/.agents/provenance/node_modules/tsx/dist/cli.mjs" "$(git rev-parse --show-toplevel)/.codex/hooks/provenance.ts"'
+timeout = 5
+statusMessage = "Recording Codex provenance"
+
+[[hooks.PostCompact]]
+matcher = "*"
+
+[[hooks.PostCompact.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/.agents/provenance/node_modules/tsx/dist/cli.mjs" "$(git rev-parse --show-toplevel)/.codex/hooks/provenance.ts"'
+timeout = 5
+statusMessage = "Recording Codex provenance"
+
+[[hooks.SubagentStart]]
+matcher = "*"
+
+[[hooks.SubagentStart.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/.agents/provenance/node_modules/tsx/dist/cli.mjs" "$(git rev-parse --show-toplevel)/.codex/hooks/provenance.ts"'
+timeout = 5
+statusMessage = "Recording Codex provenance"
+
+[[hooks.SubagentStop]]
+matcher = "*"
+
+[[hooks.SubagentStop.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/.agents/provenance/node_modules/tsx/dist/cli.mjs" "$(git rev-parse --show-toplevel)/.codex/hooks/provenance.ts"'
+timeout = 5
+statusMessage = "Recording Codex provenance"
+
+[[hooks.Stop]]
+matcher = "*"
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/.agents/provenance/node_modules/tsx/dist/cli.mjs" "$(git rev-parse --show-toplevel)/.codex/hooks/provenance.ts"'
+timeout = 5
+statusMessage = "Recording Codex provenance"

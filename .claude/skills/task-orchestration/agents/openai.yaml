@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Orchestration"
+  short_description: "Managed plan-to-task execution runtime"
+  default_prompt: "Use $task-orchestration to materialize and execute a managed task plan."
