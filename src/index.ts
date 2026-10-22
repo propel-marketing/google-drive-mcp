@@ -4,6 +4,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+import { isMcpHttpInputWithinLimit } from './http-input-limit.js';
 import {
   CallToolRequestSchema,
   ListResourcesRequestSchema,
@@ -610,6 +611,16 @@ function createHttpApp(host: string, options?: CreateHttpAppOptions) {
   }
 
   app.post('/mcp', async (req, res) => {
+    // Admission precedes SDK JSON-RPC/tool validation, session allocation and dispatch.
+    // Keep the refusal constant-size and do not reflect caller-controlled IDs/data.
+    if (!isMcpHttpInputWithinLimit(req.body)) {
+      res.status(413).json({
+        jsonrpc: '2.0',
+        error: { code: -32600, message: 'MCP HTTP input exceeds 32768 elements' },
+        id: null,
+      });
+      return;
+    }
     try {
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
