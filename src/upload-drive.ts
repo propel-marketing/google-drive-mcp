@@ -84,12 +84,13 @@ function sessionUrl(value: unknown): string {
   try { url = new URL(value); } catch { throw fail(); }
   if (url.origin !== 'https://www.googleapis.com' || url.username || url.password
     || url.port || url.hash || url.pathname !== '/upload/drive/v3/files') throw fail();
-  const allowed = new Set(['uploadType', 'upload_id', 'supportsAllDrives', 'fields']);
+  const allowed = new Set(['uploadType', 'upload_id', 'supportsAllDrives', 'fields', 'session_crd']);
   for (const key of url.searchParams.keys()) {
     if (!allowed.has(key) || url.searchParams.getAll(key).length !== 1) throw fail();
   }
   if (url.searchParams.get('uploadType') !== 'resumable'
     || !/^[A-Za-z0-9_-]{1,8192}$/.test(url.searchParams.get('upload_id') ?? '')
+    || (url.searchParams.has('session_crd') && !/^[A-Za-z0-9_-]{1,8192}$/.test(url.searchParams.get('session_crd') ?? ''))
     || (url.searchParams.has('supportsAllDrives') && url.searchParams.get('supportsAllDrives') !== 'true')
     || (url.searchParams.has('fields') && url.searchParams.get('fields') !== UPLOAD_FIELDS)) throw fail();
   return value;

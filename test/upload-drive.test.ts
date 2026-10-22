@@ -281,6 +281,113 @@ unsafeLocations.forEach((location, index) => {
     await failure(f.provider.commit(f.input), 'DRIVE_COMMIT_FAILED', false);
   });
 });
+// Observed provider parameter shape/order only; every token below is synthetic.
+const SESSION_CRD_SHAPE = 'https://www.googleapis.com' + UPLOAD
+  + '?uploadType=resumable&supportsAllDrives=true&fields=id,parents,size,md5Checksum,sha256Checksum'
+  + '&upload_id=synthetic_upload_id&session_crd=';
+for (const [label, token] of [
+  ['observed-shape', 'synthetic_session_crd_AZaz09_-'],
+  ['minimum-length', 's'],
+  ['maximum-length', 's'.repeat(8192)],
+] as const) {
+  test(`session_crd ${label}: real SDK POST, exact streamed PUT and authoritative GET`, async t => {
+    const location = SESSION_CRD_SHAPE + token;
+    const steps = [parent(), file({}, 404), post({ headers: { location } }), put(), file()];
+    const f = fixture(t, steps);
+    steps[2].inspect = options => {
+      const url = new URL(String(options.url));
+      assert.deepEqual([...url.searchParams], [
+        ['uploadType', 'resumable'], ['supportsAllDrives', 'true'],
+        ['fields', 'id,parents,size,md5Checksum,sha256Checksum'],
+      ]);
+      assert.equal(typeof options.body, 'string');
+      assert.deepEqual(JSON.parse(options.body as string), {
+        id: FILE, name: f.input.filename, parents: [PARENT], mimeType: f.input.mime_type,
+      });
+      const headers = options.headers as Record<string, string>;
+      assert.equal(headers['Content-Type'], 'application/json; charset=UTF-8');
+      assert.equal(headers['X-Upload-Content-Length'], String(f.bytes.length));
+      assert.equal(headers['X-Upload-Content-Type'], f.input.mime_type);
+    };
+    let stream: ReadStream | undefined;
+    steps[3].inspect = async options => {
+      assert.equal(String(options.url), location, 'preserve complete admitted Location without rewriting');
+      assert.ok(options.body instanceof ReadStream);
+      stream = options.body;
+      assert.equal(stream.bytesRead, 0);
+      assert.equal(options.multipart, undefined);
+      const headers = options.headers as Record<string, string>;
+      assert.equal(headers['Content-Length'], String(f.bytes.length));
+      assert.equal(headers['Content-Type'], f.input.mime_type);
+      assert.equal(headers['Content-Range'], `bytes 0-${f.bytes.length - 1}/${f.bytes.length}`);
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        assert.ok(Buffer.isBuffer(chunk));
+        assert.ok(chunk.length <= 64 * 1024);
+        chunks.push(chunk);
+      }
+      assert.deepEqual(Buffer.concat(chunks), f.bytes);
+    };
+    steps[3].data = { id: 'synthetic_untrusted_put_response' };
+    steps[4].data = metadata(f.input);
+    assert.deepEqual(await f.provider.commit(f.input), { file_id: FILE, parents: [PARENT], size: f.bytes.length });
+    assert.ok(stream?.destroyed);
+    assert.deepEqual(readFileSync(f.input.spoolPath), f.bytes);
+    assert.deepEqual(f.calls, [
+      { method: 'GET', path: '/drive/v3/files/' + PARENT },
+      { method: 'GET', path: '/drive/v3/files/' + FILE },
+      { method: 'POST', path: UPLOAD }, { method: 'PUT', path: UPLOAD },
+      { method: 'GET', path: '/drive/v3/files/' + FILE },
+    ]);
+  });
+}
+for (const [label, suffix] of [
+  ['empty', ''], ['oversized', 's'.repeat(8193)],
+  ['slash', 'synthetic/unsafe'], ['encoded-slash', 'synthetic%2Funsafe'],
+  ['plus', 'synthetic+unsafe'], ['dot', 'synthetic.unsafe'],
+  ['unicode', 'synthetic_\u03c0'], ['encoded-control', 'synthetic%0D%0Aunsafe'],
+  ['duplicate', 'synthetic_first&session_crd=synthetic_second'],
+  ['encoded-key-duplicate', 'synthetic_first&%73ession_crd=synthetic_second'],
+  ['encoded-key-first-duplicate', 'synthetic_first&session_crd=synthetic_second'],
+] as const) {
+  test(`hostile session_crd ${label} rejected before PUT`, async t => {
+    const prefix = label === 'encoded-key-first-duplicate'
+      ? SESSION_CRD_SHAPE.replace('session_crd=', '%73ession_crd=') : SESSION_CRD_SHAPE;
+    const f = fixture(t, [parent(), file({}, 404), post({ headers: { location: prefix + suffix } })]);
+    await failure(f.provider.commit(f.input), 'DRIVE_COMMIT_FAILED', false);
+    assert.deepEqual(f.calls.map(call => call.method), ['GET', 'GET', 'POST']);
+  });
+}
+// Repeat every inherited Location refusal with the new optional parameter present.
+unsafeLocations.forEach((location, index) => {
+  test(`unsafe session Location ${index} remains rejected with session_crd before PUT`, async t => {
+    const decorated = typeof location === 'string' ? location + '&session_crd=synthetic_guard_token'
+      : Array.isArray(location) ? location.map(value => value + '&session_crd=synthetic_guard_token') : location;
+    const f = fixture(t, [parent(), file({}, 404), post({ headers: { location: decorated } })]);
+    await failure(f.provider.commit(f.input), 'DRIVE_COMMIT_FAILED', false);
+    assert.deepEqual(f.calls.map(call => call.method), ['GET', 'GET', 'POST']);
+  });
+});
+for (const [label, location] of [
+  ['total-length', SESSION_CRD_SHAPE.replace('synthetic_upload_id', 's'.repeat(8192)) + 's'.repeat(8192)],
+  ['backslash', SESSION_CRD_SHAPE + 'synthetic\\unsafe'],
+  ['missing-upload-id', SESSION_CRD_SHAPE.replace('upload_id=synthetic_upload_id&', '') + 'synthetic_token'],
+  ['oversized-upload-id', SESSION_CRD_SHAPE.replace('synthetic_upload_id', 's'.repeat(8193)) + 'synthetic_token'],
+  ['duplicate-supportsAllDrives', SESSION_CRD_SHAPE + 'synthetic_token&supportsAllDrives=true'],
+  ['duplicate-fields', SESSION_CRD_SHAPE + 'synthetic_token&fields=id,parents,size,md5Checksum,sha256Checksum'],
+] as const) {
+  test(`existing session guard ${label} remains rejected with session_crd before PUT`, async t => {
+    const f = fixture(t, [parent(), file({}, 404), post({ headers: { location } })]);
+    await failure(f.provider.commit(f.input), 'DRIVE_COMMIT_FAILED', false);
+    assert.deepEqual(f.calls.map(call => call.method), ['GET', 'GET', 'POST']);
+  });
+}
+test('duplicate differently-cased Location headers with session_crd rejected before PUT', async t => {
+  const location = SESSION_CRD_SHAPE + 'synthetic_header_token';
+  const f = fixture(t, [parent(), file({}, 404), post({ headers: { location, Location: location } })]);
+  await failure(f.provider.commit(f.input), 'DRIVE_COMMIT_FAILED', false);
+  assert.deepEqual(f.calls.map(call => call.method), ['GET', 'GET', 'POST']);
+});
 test('duplicate differently-cased Location headers rejected before PUT', async t => {
   const f = fixture(t, [parent(), file({}, 404), post({ headers: { location: SESSION, Location: SESSION } })]);
   await failure(f.provider.commit(f.input), 'DRIVE_COMMIT_FAILED', false);
