@@ -31,6 +31,9 @@ import * as docsTools from './tools/docs.js';
 import * as sheetsTools from './tools/sheets.js';
 import * as slidesTools from './tools/slides.js';
 import * as calendarTools from './tools/calendar.js';
+import * as uploadTools from './tools/upload.js';
+
+uploadTools.configureUploadRelay(() => ({ getDrive, authClient }));
 
 // Cached service instances — only recreated when authClient changes
 let _drive: drive_v3.Drive | null = null;
@@ -188,7 +191,7 @@ async function ensureAuthenticated() {
 // -----------------------------------------------------------------------------
 // DOMAIN MODULES
 // -----------------------------------------------------------------------------
-const domainModules = [driveTools, docsTools, sheetsTools, slidesTools, calendarTools];
+const domainModules = [driveTools, docsTools, sheetsTools, slidesTools, calendarTools, uploadTools];
 
 function buildToolContext(): ToolContext {
   return {
@@ -548,19 +551,28 @@ async function main() {
 async function startStdioTransport(): Promise<void> {
   try {
     console.error("Starting Google Drive MCP server (stdio)...");
+    await uploadTools.startUploadRelay();
     const transport = new StdioServerTransport();
     await server.connect(transport);
     log('Server started successfully');
 
-    process.on("SIGINT", async () => {
-      await server.close();
-      process.exit(0);
-    });
-    process.on("SIGTERM", async () => {
-      await server.close();
-      process.exit(0);
-    });
+    let shuttingDown = false;
+    const shutdown = async () => {
+      if (shuttingDown) return;
+      shuttingDown = true;
+      try {
+        await server.close();
+      } finally {
+        await uploadTools.closeUploadRelay();
+        process.exit(0);
+      }
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+    process.stdin.once('end', shutdown);
+    if (process.stdin.readableEnded) await shutdown();
   } catch (error) {
+    await uploadTools.closeUploadRelay();
     console.error('Failed to start server:', error);
     process.exit(1);
   }
@@ -741,6 +753,7 @@ async function startHttpTransport(args: CliArgs): Promise<void> {
   try {
     const { httpPort, httpHost } = args;
     console.error(`Starting Google Drive MCP server (HTTP on ${httpHost}:${httpPort})...`);
+    await uploadTools.startUploadRelay();
 
     const { app, sessions } = createHttpApp(httpHost);
 
@@ -748,20 +761,28 @@ async function startHttpTransport(args: CliArgs): Promise<void> {
       log(`HTTP server listening on ${httpHost}:${httpPort}`);
     });
 
+    let shuttingDown = false;
     const shutdown = async () => {
+      if (shuttingDown) return;
+      shuttingDown = true;
       log('Shutting down HTTP server...');
-      for (const [sid, session] of sessions) {
-        await session.transport.close();
-        await session.server.close();
-        sessions.delete(sid);
+      try {
+        for (const [sid, session] of sessions) {
+          await session.transport.close();
+          await session.server.close();
+          sessions.delete(sid);
+        }
+      } finally {
+        httpServer.close();
+        await uploadTools.closeUploadRelay();
+        process.exit(0);
       }
-      httpServer.close();
-      process.exit(0);
     };
 
     process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);
   } catch (error) {
+    await uploadTools.closeUploadRelay();
     console.error('Failed to start HTTP server:', error);
     process.exit(1);
   }

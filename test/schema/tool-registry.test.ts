@@ -3,6 +3,7 @@ import { describe, it, before, after } from 'node:test';
 import { setupTestServer, type TestContext } from '../helpers/setup-server.js';
 
 const EXPECTED_TOOL_COUNT = 100;
+const RELAY_TOOLS = ['uploadBegin', 'uploadChunk', 'uploadStatus', 'uploadCommit', 'uploadAbort'];
 
 const EXPECTED_TOOLS = [
   'search', 'createTextFile', 'updateTextFile', 'createFolder', 'listFolder', 'listSharedDrives',
@@ -47,7 +48,14 @@ describe('Tool Registry', () => {
   });
 
   it(`registers exactly ${EXPECTED_TOOL_COUNT} tools`, () => {
-    assert.equal(tools.length, EXPECTED_TOOL_COUNT, `Expected ${EXPECTED_TOOL_COUNT} tools, got ${tools.length}`);
+    // Keep the historical 100-tool assertion as a baseline partition.
+    const original = tools.filter(tool => !RELAY_TOOLS.includes(tool.name));
+    assert.equal(original.length, EXPECTED_TOOL_COUNT, `Expected ${EXPECTED_TOOL_COUNT} original tools, got ${original.length}`);
+  });
+
+  it('adds exactly the five approved relay tools to the original catalog', () => {
+    assert.equal(tools.length, EXPECTED_TOOL_COUNT + RELAY_TOOLS.length);
+    assert.deepEqual(tools.slice(EXPECTED_TOOL_COUNT).map(tool => tool.name), RELAY_TOOLS);
   });
 
   it('has no duplicate tool names', () => {

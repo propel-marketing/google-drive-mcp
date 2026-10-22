@@ -1360,3 +1360,27 @@ Contributions are welcome! Please:
 - Built on [Model Context Protocol](https://modelcontextprotocol.io)
 - Uses [Google APIs Node.js Client](https://github.com/googleapis/google-api-nodejs-client)
 - Inspired by the MCP community
+
+## Durable Binary Upload Relay
+
+Five additive tools transfer client-held bytes without a server-visible local path:
+
+- `uploadBegin({ filename, parent_folder_id, total_size_bytes, sha256, mime_type, consumer_label? })` → `{ upload_id, resume_secret, max_chunk_bytes, expires_at }`.
+- `uploadChunk({ upload_id, resume_secret, offset, content_base64 })` → status.
+- `uploadStatus({ upload_id, resume_secret })` → status, including the highest contiguous byte count and next offset.
+- `uploadCommit({ upload_id, resume_secret })` → `{ file_id, parents, size }` after local integrity and remote receipt verification.
+- `uploadAbort({ upload_id, resume_secret })` → status after local cleanup; never remote deletion.
+
+Use a lowercase whole-file SHA-256, canonical standard base64 chunks, decoded byte offsets and an explicit Drive folder ID (no root fallback). Nonoverlapping out-of-order chunks and exact-range retry/repair are supported. `consumer_label` is audit-only, not authorization. MIME must be bare `type/subtype`; native Workspace conversion is unsupported, and a binary CSV keeps its declared name. Existing `uploadFile` and authentication are unchanged; no dependencies or new authentication modes are added.
+
+**Keep the capability private:** begin returns a 256-bit `resume_secret` once. The server stores only its SHA-256 digest, not plaintext, and does not log it. The client must privately retain it with `upload_id`, separate from the shared artifact, reports and logs. Reconnect with a fresh MCP session and reuse that pair; missing/wrong secrets return `SESSION_NOT_FOUND`. Never put the secret in a URL or shared transcript.
+
+Defaults: 64 KiB decoded chunks (87,384 base64 characters; about 88 kB for a compact complete request, below the unchanged 100 KiB HTTP parser), 1 GiB per-session / 4 GiB global **declared-byte reservations**, 24-hour TTL, 60-second sweep, 1,024 retained sessions, 65,536 ranges and 8 MiB metadata per session. Base64 is a scalar, not one entry per character under the separate 32,768-element HTTP guard. Raising the configurable engine chunk cap does not enlarge either HTTP guard.
+
+Size and SHA-256 are verified before any Drive write. Pending retries use the same durable generated Drive file ID; committed receipts are idempotent only within bounded retention (one TTL after the terminal transition). Pending bytes are immutable, but abort/TTL still clean local content and release reservations. Abort, expiry and image rollback do not undo a remote object from a successful or ambiguous attempt.
+
+Public relay error codes are `SESSION_NOT_FOUND`, `SESSION_EXPIRED`, `OFFSET_MISMATCH` (with `next_expected_offset`), `SIZE_EXCEEDED`, `HASH_MISMATCH`, `PARENT_INVALID`, and `DRIVE_COMMIT_FAILED` (with `retryable`). See the [full relay contract and operator guide](docs/upload-relay.md) for exact status/error JSON, environment variables, custody, retry/repair, retention and limits.
+
+**Deployment prerequisite:** provision a persistent, private, single-writer POSIX volume at `UPLOAD_RELAY_SPOOL_DIR` (default `~/.config/google-drive-mcp/upload-relay`, or under `XDG_CONFIG_HOME`), mode 0700 and owned/writable by the actual runtime UID. Both Dockerfiles use `USER node` (typically UID 1000; verify the image). Existing Compose is not changed and does not provide this dedicated relay mount; a later gated deployment must provision and approve it. Imports/help/version do not initialize the spool; actual server startup sweeps without waiting for tool calls. Relay unavailability does not disable existing tools. Ownership uncertainty fails closed; operator lock recovery requires proving no live owner exists.
+
+This addition documents offline engineering, not Coordinator qualification, a deployed relay, or eight live Radar acceptance tests. The guide supplies a preflight/retained-baseline-image rollback plan; no deployment or live Google calls are performed here. Synchronous filesystem recovery and serialized provider work have no hard overall provider deadline, so these bounds are not a whole-service denial-of-service guarantee. Existing named UUID debt is unchanged.
