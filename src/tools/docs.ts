@@ -792,7 +792,8 @@ const CreateGoogleDocSchema = z.object({
 
 const UpdateGoogleDocSchema = z.object({
   documentId: z.string().min(1, "Document ID is required"),
-  content: z.string()
+  content: z.string(),
+  tabId: z.string().min(1, "Tab ID is required").optional()
 });
 
 const GetGoogleDocContentSchema = z.object({
@@ -803,7 +804,8 @@ const GetGoogleDocContentSchema = z.object({
 const InsertTextSchema = z.object({
   documentId: z.string().min(1, "Document ID is required"),
   text: z.string().min(1, "Text to insert is required"),
-  index: z.number().int().min(1, "Index must be at least 1 (1-based)")
+  index: z.number().int().min(1, "Index must be at least 1 (1-based)"),
+  tabId: z.string().min(1, "Tab ID is required").optional()
 });
 
 const DeleteRangeSchema = z.object({
@@ -919,7 +921,8 @@ const InsertTableSchema = z.object({
   documentId: z.string().min(1, "Document ID is required"),
   rows: z.number().int().min(1, "Must have at least 1 row"),
   columns: z.number().int().min(1, "Must have at least 1 column"),
-  index: z.number().int().min(1, "Index must be at least 1 (1-based)")
+  index: z.number().int().min(1, "Index must be at least 1 (1-based)"),
+  tabId: z.string().min(1, "Tab ID is required").optional()
 });
 
 const EditTableCellSchema = z.object({
@@ -1026,7 +1029,8 @@ export const toolDefinitions: ToolDefinition[] = [
       type: "object",
       properties: {
         documentId: { type: "string", description: "Doc ID" },
-        content: { type: "string", description: "New content" }
+        content: { type: "string", description: "New content" },
+        tabId: { type: "string", minLength: 1, description: "Target tab ID (defaults to the first tab when omitted)" }
       },
       required: ["documentId", "content"]
     }
@@ -1039,7 +1043,8 @@ export const toolDefinitions: ToolDefinition[] = [
       properties: {
         documentId: { type: "string", description: "The document ID" },
         text: { type: "string", description: "Text to insert" },
-        index: { type: "number", description: "Position to insert at (1-based)" }
+        index: { type: "number", description: "Position to insert at (1-based)" },
+        tabId: { type: "string", minLength: 1, description: "Target tab ID (defaults to the first tab when omitted)" }
       },
       required: ["documentId", "text", "index"]
     }
@@ -1295,7 +1300,8 @@ export const toolDefinitions: ToolDefinition[] = [
         documentId: { type: "string", description: "The document ID" },
         rows: { type: "number", description: "Number of rows for the new table" },
         columns: { type: "number", description: "Number of columns for the new table" },
-        index: { type: "number", description: "The index (1-based) where the table should be inserted" }
+        index: { type: "number", description: "The index (1-based) where the table should be inserted" },
+        tabId: { type: "string", minLength: 1, description: "Target tab ID (defaults to the first tab when omitted)" }
       },
       required: ["documentId", "rows", "columns", "index"]
     }
@@ -1532,10 +1538,18 @@ export async function handleTool(toolName: string, args: Record<string, unknown>
       const a = validation.data;
 
       const docs = ctx.google.docs({ version: 'v1', auth: ctx.authClient });
-      const document = await docs.documents.get({ documentId: a.documentId });
+      const document = await docs.documents.get({
+        documentId: a.documentId,
+        ...(a.tabId !== undefined ? { includeTabsContent: true } : {})
+      });
+      const selectedTab = a.tabId !== undefined ? findTabById(document.data.tabs || [], a.tabId) : undefined;
+      if (a.tabId !== undefined && !selectedTab) {
+        return errorResponse(`Tab not found: ${a.tabId} in document ${a.documentId}`);
+      }
+      const body = a.tabId !== undefined ? selectedTab.documentTab?.body : document.data.body;
 
       // Delete all content
-      const endIndex = document.data.body?.content?.[document.data.body.content.length - 1]?.endIndex || 1;
+      const endIndex = body?.content?.[body.content.length - 1]?.endIndex || 1;
       const deleteEndIndex = Math.max(1, endIndex - 1);
 
       if (deleteEndIndex > 1) {
@@ -1544,7 +1558,7 @@ export async function handleTool(toolName: string, args: Record<string, unknown>
           requestBody: {
             requests: [{
               deleteContentRange: {
-                range: { startIndex: 1, endIndex: deleteEndIndex }
+                range: { startIndex: 1, endIndex: deleteEndIndex, ...(a.tabId !== undefined ? { tabId: a.tabId } : {}) }
               }
             }]
           }
@@ -1557,13 +1571,14 @@ export async function handleTool(toolName: string, args: Record<string, unknown>
         requestBody: {
           requests: [
             {
-              insertText: { location: { index: 1 }, text: a.content }
+              insertText: { location: { index: 1, ...(a.tabId !== undefined ? { tabId: a.tabId } : {}) }, text: a.content }
             },
             {
               updateParagraphStyle: {
                 range: {
                   startIndex: 1,
-                  endIndex: a.content.length + 1
+                  endIndex: a.content.length + 1,
+                  ...(a.tabId !== undefined ? { tabId: a.tabId } : {})
                 },
                 paragraphStyle: {
                   namedStyleType: 'NORMAL_TEXT'
@@ -1876,7 +1891,7 @@ export async function handleTool(toolName: string, args: Record<string, unknown>
         requestBody: {
           requests: [{
             insertText: {
-              location: { index: a.index },
+              location: { index: a.index, ...(a.tabId !== undefined ? { tabId: a.tabId } : {}) },
               text: a.text
             }
           }]
@@ -2728,7 +2743,7 @@ export async function handleTool(toolName: string, args: Record<string, unknown>
 
       const request_body = {
         insertTable: {
-          location: { index: a.index },
+          location: { index: a.index, ...(a.tabId !== undefined ? { tabId: a.tabId } : {}) },
           rows: a.rows,
           columns: a.columns
         }
@@ -3033,7 +3048,7 @@ export async function handleTool(toolName: string, args: Record<string, unknown>
       await docs.documents.batchUpdate({
         documentId: a.documentId,
         // updateDocumentTabProperties is not yet in the googleapis TypeScript types — cast required
-        requestBody: { requests: [{ updateDocumentTabProperties: { tabId: a.tabId, tabProperties: { title: a.title }, fields: 'title' } } as any] }
+        requestBody: { requests: [{ updateDocumentTabProperties: { tabProperties: { tabId: a.tabId, title: a.title }, fields: 'title' } } as any] }
       });
 
       return { content: [{ type: 'text', text: `Renamed tab ${a.tabId} to "${a.title}".` }], isError: false };
