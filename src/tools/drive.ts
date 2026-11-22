@@ -1,3 +1,4 @@
+import { originalReadDefinitions, handleOriginalRead } from './original-read.js';
 import { z } from 'zod';
 import type { drive_v3 } from 'googleapis';
 import { existsSync, statSync, createReadStream } from 'fs';
@@ -247,6 +248,7 @@ function resolveScopeStatus(ctx: ToolContext): { requestedScopes: string[]; gran
 // ---------------------------------------------------------------------------
 
 export const toolDefinitions: ToolDefinition[] = [
+  ...originalReadDefinitions,
   {
     name: "search",
     description: "Search for files in Google Drive. Set rawQuery=true to pass a raw Google Drive API query supporting operators like modifiedTime, createdTime, mimeType, name contains, etc.",
@@ -641,6 +643,9 @@ export async function handleTool(
   ctx: ToolContext,
 ): Promise<ToolResult | null> {
   switch (toolName) {
+    case 'listFolderStructured':
+    case 'readOriginalFile':
+      return handleOriginalRead(toolName, args, ctx);
 
     case "search": {
       const validation = SearchSchema.safeParse(args);
