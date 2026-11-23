@@ -131,14 +131,14 @@ const capability = (begin: { upload_id: string; resume_secret: string }) => ({
 });
 
 describe('durable upload relay over real SDK Streamable HTTP', { concurrency: false }, () => {
-  it('lists exactly 105 tools and preserves the original 100 catalog entries byte-for-byte', async () => {
+  it('lists exactly 107 tools and preserves the non-relay catalog entries byte-for-byte', async () => {
     await withRelay(async f => {
       const { client } = await f.connect();
       const baseline = [drive, docs, sheets, slides, calendar].flatMap(m => m.toolDefinitions);
-      assert.equal(baseline.length, 100);
+      assert.equal(baseline.length, 102);
       const catalog = await client.listTools();
-      assert.equal(catalog.tools.length, 105);
-      assert.equal(new Set(catalog.tools.map(t => t.name)).size, 105);
+      assert.equal(catalog.tools.length, 107);
+      assert.equal(new Set(catalog.tools.map(t => t.name)).size, 107);
       assert.equal(JSON.stringify(catalog.tools.filter(t => !additions.includes(t.name))), JSON.stringify(baseline));
       assert.deepEqual(catalog.tools.filter(t => additions.includes(t.name)).map(t => t.name), additions);
     });
