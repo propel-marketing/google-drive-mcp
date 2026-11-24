@@ -14,6 +14,7 @@ export interface ToolDefinition {
 }
 
 export interface ToolContext {
+  signal?: AbortSignal;
   authClient: any;
   google: typeof GoogleApisType;
   getDrive: () => drive_v3.Drive;

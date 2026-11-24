@@ -13,6 +13,7 @@ import {
   isInitializeRequest,
 } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from 'crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { google } from "googleapis";
 import type { drive_v3, calendar_v3 } from "googleapis";
 import { authenticate, AuthServer, initializeOAuth2Client } from './auth.js';
@@ -211,6 +212,8 @@ function buildToolContext(): ToolContext {
 // SERVER FACTORY
 // -----------------------------------------------------------------------------
 
+const httpResponseSignal = new AsyncLocalStorage<AbortSignal>();
+
 function createMcpServer(): Server {
   const s = new Server(
     {
@@ -340,11 +343,13 @@ function createMcpServer(): Server {
     };
   });
 
-  s.setRequestHandler(CallToolRequestSchema, async (request) => {
+  s.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     await ensureAuthenticated();
     log('Handling tool request', { tool: request.params.name });
 
-    const ctx = buildToolContext();
+    const responseSignal = httpResponseSignal.getStore();
+    const ctx = { ...buildToolContext(), signal: responseSignal
+      ? AbortSignal.any([extra.signal, responseSignal]) : extra.signal };
 
     try {
       for (const mod of domainModules) {
@@ -621,6 +626,18 @@ function createHttpApp(host: string, options?: CreateHttpAppOptions) {
       sessionTimers.delete(sid);
     }
   }
+
+  // SDK response-stream cancellation removes its mapping, not the handler's
+  // signal. Bind only this response's premature close, never request-body end.
+  app.post('/mcp', (_req, res, next) => {
+    const controller = new AbortController();
+    const close = () => {
+      if (!res.writableFinished) controller.abort();
+    };
+    res.once('close', close);
+    res.once('finish', () => res.removeListener('close', close));
+    httpResponseSignal.run(controller.signal, next);
+  });
 
   app.post('/mcp', async (req, res) => {
     // Admission precedes SDK JSON-RPC/tool validation, session allocation and dispatch.
