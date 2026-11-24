@@ -187,6 +187,24 @@ test('idle guard fires exactly 120 seconds after the last nonempty chunk', async
   assert.equal((await reading()).isError, false);
 });
 
+test('empty chunks do not reset the media idle guard', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const log = t.mock.method(console, 'error', () => {});
+  const f = fixture();
+  const stream = new Readable({ objectMode: true, read() {} }); f.stream = () => stream;
+  let settled = false;
+  const pending = reading(f).then(reply => { settled = true; return reply; });
+  await flush();
+  t.mock.timers.tick(60000); stream.push(Buffer.alloc(0)); await flush();
+  t.mock.timers.tick(59999); await flush();
+  assert.equal(settled, false);
+  t.mock.timers.tick(1); refused(await pending);
+  assert.equal(stream.destroyed, true);
+  assert.deepEqual(log.mock.calls.map(call => call.arguments).filter(args => String(args[0]).startsWith('[Drive.')),
+    [['[Drive.originalRead] refused cause=media_idle_timeout']]);
+  assert.equal((await reading()).isError, false);
+});
+
 test('never-ending progressing stream hits wall clock at exactly 600 seconds', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const log = t.mock.method(console, 'error', () => {});
