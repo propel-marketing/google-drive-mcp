@@ -221,6 +221,43 @@ test('dispatcher disconnect signal aborts mid-media and releases latch', async t
   ]);
 });
 
+test('disconnect between media fulfillment and ownership disposes the stream without errors', async t => {
+  const log = t.mock.method(console, 'error', () => {});
+  const disconnected = new AbortController();
+  const stream = new Readable({ read() {} });
+  const errors: unknown[] = [];
+  const unhandled: unknown[] = [];
+  const onUnhandled = (error: unknown) => { unhandled.push(error); };
+  stream.on('error', error => errors.push(error));
+  process.on('unhandledRejection', onUnhandled);
+  const f = fixture();
+  f.ctx.getDrive = (() => ({ files: { get: (parameters: any) => {
+    if (!parameters.alt) return Promise.resolve({ data: metadata() });
+    // First the files.get .then sees a live signal; then abort, before
+    // abortable's fulfillment handler can transfer ownership to media.
+    queueMicrotask(() => queueMicrotask(() => disconnected.abort()));
+    return Promise.resolve({ data: stream });
+  } } })) as any;
+  try {
+    const reply = await handleOriginalRead('readOriginalFile', input, f.ctx, disconnected.signal);
+    refused(reply);
+    assert.equal(JSON.parse(reply.content[0].text).code, 'ORIGINAL_READ_REFUSED');
+    await flush();
+    assert.equal(stream.destroyed, true);
+    assert.deepEqual(log.mock.calls.map(call => call.arguments), [['[Drive.originalRead] refused cause=client_disconnected']]);
+    assert.deepEqual(errors, []);
+    assert.deepEqual(unhandled, []);
+    assert.equal((await reading()).isError, false);
+    await flush();
+    assert.deepEqual(errors, []);
+    assert.deepEqual(unhandled, []);
+    assert.equal(log.mock.calls.length, 1);
+  } finally {
+    process.removeListener('unhandledRejection', onUnhandled);
+    stream.destroy();
+  }
+});
+
 test('disconnect before entry and during metadata both release latch', async t => {
   t.mock.method(console, 'error', () => {});
   for (const preAborted of [false, true]) {
@@ -421,6 +458,85 @@ test('HTTP premature response close aborts only its read; normal body end and co
     await flush(); assert.equal(mediaSignal.aborted, false);
     assert.equal((await reading()).isError, false);
   } finally {
+    for (const session of sessions.values()) { await session.transport.close(); await session.server.close(); }
+    server.closeAllConnections();
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    await cleanup();
+  }
+});
+
+test('HTTP premature close isolates two pending structured listings on distinct sessions', async t => {
+  const log = t.mock.method(console, 'error', () => {});
+  const { mocks, cleanup } = await setupTestServer();
+  const { createHttpApp } = await import('../src/index.js');
+  const http = await import('node:http');
+  const { app, sessions } = createHttpApp('127.0.0.1');
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise<void>(resolve => server.once('listening', resolve));
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  const endpoint = `http://127.0.0.1:${address.port}/mcp`;
+  const headers = { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' };
+  const pending = new Map<string, { signal: AbortSignal; complete: () => void }>();
+  let started!: () => void;
+  const ready = new Promise<void>(resolve => { started = resolve; });
+  let aborted!: () => void;
+  const cancelled = new Promise<void>(resolve => { aborted = resolve; });
+  mocks.drive.service.files.list._setImpl((parameters: any, options: any) => new Promise(resolve => {
+    pending.set(parameters.q, { signal: options.signal,
+      complete: () => resolve({ data: { files: [], incompleteSearch: false } }) });
+    options.signal.addEventListener('abort', aborted, { once: true });
+    if (pending.size === 2) started();
+  }));
+  const requests: import('node:http').ClientRequest[] = [];
+  const key = (folder: string) => `'${folder}' in parents and trashed = false`;
+  try {
+    const sessionIds: string[] = [];
+    for (let id = 1; id <= 2; id++) {
+      const initialized = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ jsonrpc: '2.0', id,
+        method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'synthetic', version: '1' } } }) });
+      assert.equal(initialized.status, 200);
+      const sid = initialized.headers.get('mcp-session-id'); assert.ok(sid);
+      sessionIds.push(sid); await initialized.text();
+    }
+    assert.notEqual(sessionIds[0], sessionIds[1]);
+    const results = sessionIds.map((sid, index) => new Promise<string>(resolve => {
+      const request = http.request(endpoint, { method: 'POST', headers: { ...headers, 'mcp-session-id': sid } }, response => {
+        let body = '';
+        response.setEncoding('utf8');
+        response.on('data', chunk => { body += chunk; });
+        response.on('end', () => resolve(body));
+      });
+      request.on('error', () => resolve(''));
+      requests.push(request);
+      request.end(JSON.stringify({ jsonrpc: '2.0', id: index + 3, method: 'tools/call',
+        params: { name: 'listFolderStructured', arguments: { folderId: `folder_${index + 1}` } } }));
+    }));
+    await ready; await flush();
+    const first = pending.get(key('folder_1'))!;
+    const second = pending.get(key('folder_2'))!;
+    assert.notEqual(first.signal, second.signal);
+    assert.equal(first.signal.aborted, false);
+    assert.equal(second.signal.aborted, false);
+    requests[0].destroy();
+    await cancelled; await flush();
+    assert.equal(first.signal.aborted, true);
+    assert.equal(first.signal.reason.causeName, 'client_disconnected');
+    assert.equal(second.signal.aborted, false);
+    const causeLines = () => log.mock.calls.map(call => call.arguments)
+      .filter(args => String(args[0]).includes('refused cause='));
+    assert.deepEqual(causeLines(), [['[Drive.listStructured] refused cause=client_disconnected']]);
+    second.complete();
+    const text = await results[1];
+    assert.ok(text.includes('"isError":false'));
+    assert.ok(text.includes('"folderId":"folder_2"'));
+    await flush();
+    assert.equal(second.signal.aborted, false);
+    assert.equal(causeLines().length, 1);
+    first.complete(); // Settle the provider that ignored cancellation too.
+    await flush();
+  } finally {
+    for (const request of requests) request.destroy();
+    for (const operation of pending.values()) operation.complete();
     for (const session of sessions.values()) { await session.transport.close(); await session.server.close(); }
     server.closeAllConnections();
     await new Promise<void>(resolve => server.close(() => resolve()));

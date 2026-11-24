@@ -43,15 +43,20 @@ function checkAbort(signal: AbortSignal) {
   if (signal.aborted) throw signal.reason;
 }
 // Settle even if a provider ignores abort; late media is disposed separately.
-function abortable<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
+function abortable<T>(operation: Promise<T>, signal: AbortSignal, dispose?: (value: T) => void): Promise<T> {
   return new Promise((resolve, reject) => {
-    const abort = () => reject(signal.reason);
+    let rejected = false;
+    const abort = () => { rejected = true; reject(signal.reason); };
     signal.addEventListener('abort', abort, { once: true });
     operation.then(value => {
       signal.removeEventListener('abort', abort);
-      if (signal.aborted) reject(signal.reason); else resolve(value);
+      if (signal.aborted || rejected) {
+        dispose?.(value);
+        abort();
+      } else resolve(value);
     }, error => {
       signal.removeEventListener('abort', abort);
+      rejected = true;
       reject(signal.aborted ? signal.reason : error);
     });
     if (signal.aborted) abort();
@@ -154,7 +159,8 @@ async function originalBytes(args: unknown, ctx: ToolContext, signal: AbortSigna
         if (mediaController.signal.aborted) (result.data as Readable)?.destroy?.();
         return result;
       });
-    media = (await abortable(mediaRequest, mediaController.signal)).data as Readable;
+    media = (await abortable(mediaRequest, mediaController.signal,
+      result => (result.data as Readable)?.destroy?.())).data as Readable;
     clearTimeout(headersTimer);
     checkAbort(mediaController.signal);
     resetIdle(); // Starts at headers; only nonempty chunks re-arm it.
