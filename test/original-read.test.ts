@@ -7,6 +7,8 @@ import { toolDefinitions, handleTool } from '../src/tools/drive.js';
 import type { ToolContext } from '../src/types.js';
 import { setupTestServer } from './helpers/setup-server.js';
 
+const flush = () => new Promise<void>(resolve => setImmediate(resolve));
+
 const bytes = Buffer.from('original synthetic archive bytes');
 const metadata = () => ({ id: 'file_1', name: 'original.zip', mimeType: 'application/zip',
   size: String(bytes.length), trashed: false, version: '123', parents: ['folder_1'],
@@ -140,12 +142,164 @@ test('one concurrent original reader bounds memory admission', async () => {
   stream.destroy(new Error('synthetic interruption')); refused(await first);
   assert.equal((await reading()).isError,false);
 });
-test('hanging media deadline destroys stream and releases reader slot', async () => {
+test('hanging media idle guard destroys stream and releases reader slot', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   const f = fixture(); const stream = new Readable({ read() {} }); f.stream = () => stream;
-  const started = Date.now(); refused(await reading(f));
-  assert.equal(stream.destroyed,true); assert.ok(Date.now()-started < 18000);
+  const pending = reading(f);
+  await flush();
+  t.mock.timers.tick(120000);
+  refused(await pending);
+  assert.equal(stream.destroyed,true);
   assert.equal((await reading()).isError,false);
 });
+test('healthy 400-second read succeeds with progress inside idle guard', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const f = fixture(); const stream = new Readable({ read() {} }); f.stream = () => stream;
+  const pending = reading(f);
+  await flush();
+  for (let offset = 0; offset < bytes.length; offset += 8) {
+    t.mock.timers.tick(100000);
+    stream.push(bytes.subarray(offset, offset + 8));
+    await flush();
+  }
+  stream.push(null);
+  const reply = await pending;
+  assert.equal(reply.isError, false);
+  assert.equal((reply.structuredContent as any).sha256, createHash('sha256').update(bytes).digest('hex'));
+  assert.equal(f.calls[0].options.timeout, 60000);
+  assert.equal(f.calls[2].options.timeout, 60000);
+  assert.equal(Object.prototype.hasOwnProperty.call(f.calls[1].options, 'timeout'), false);
+});
+
+test('idle guard fires exactly 120 seconds after the last nonempty chunk', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const log = t.mock.method(console, 'error', () => {});
+  const f = fixture(); const stream = new Readable({ read() {} }); f.stream = () => stream;
+  let settled = false;
+  const pending = reading(f).then(reply => { settled = true; return reply; });
+  await flush();
+  t.mock.timers.tick(100000); stream.push(bytes.subarray(0, 1)); await flush();
+  t.mock.timers.tick(119999); await flush();
+  assert.equal(settled, false);
+  t.mock.timers.tick(1); refused(await pending);
+  assert.equal(stream.destroyed, true);
+  assert.deepEqual(log.mock.calls.map(call => call.arguments), [['[Drive.originalRead] refused cause=media_idle_timeout']]);
+  assert.equal((await reading()).isError, false);
+});
+
+test('never-ending progressing stream hits wall clock at exactly 600 seconds', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const log = t.mock.method(console, 'error', () => {});
+  const f = fixture(); const stream = new Readable({ read() {} }); f.stream = () => stream;
+  let settled = false;
+  const pending = reading(f).then(reply => { settled = true; return reply; });
+  await flush();
+  for (let step = 0; step < 5; step++) {
+    t.mock.timers.tick(100000); stream.push(Buffer.from('x')); await flush();
+  }
+  t.mock.timers.tick(99999); await flush(); assert.equal(settled, false);
+  t.mock.timers.tick(1); refused(await pending);
+  assert.equal(stream.destroyed, true);
+  assert.deepEqual(log.mock.calls.map(call => call.arguments), [['[Drive.originalRead] refused cause=wall_clock_guard']]);
+  assert.equal((await reading()).isError, false);
+});
+
+test('injected disconnect signal aborts, releases latch; HTTP wiring remains pending', async t => {
+  const log = t.mock.method(console, 'error', () => {});
+  const f = fixture(); const stream = new Readable({ read() {} }); f.stream = () => stream;
+  const disconnected = new AbortController();
+  const pending = handleOriginalRead('readOriginalFile', input, f.ctx, disconnected.signal);
+  await flush();
+  refused(await reading());
+  disconnected.abort(new Error('synthetic_private_reason'));
+  refused(await pending);
+  assert.equal(stream.destroyed, true);
+  assert.equal((await reading()).isError, false);
+  assert.deepEqual(log.mock.calls.map(call => call.arguments), [
+    ['[Drive.originalRead] refused cause=reader_busy'], ['[Drive.originalRead] refused cause=client_disconnected'],
+  ]);
+});
+
+test('disconnect before entry and during metadata both release latch', async t => {
+  t.mock.method(console, 'error', () => {});
+  for (const preAborted of [false, true]) {
+    const disconnected = new AbortController();
+    const f = fixture();
+
+    f.ctx.getDrive = (() => ({ files: { get: () => new Promise(() => {}) } })) as any;
+    if (preAborted) disconnected.abort();
+    const pending = handleOriginalRead('readOriginalFile', input, f.ctx, disconnected.signal);
+    await flush(); disconnected.abort(); refused(await pending);
+    assert.equal((await reading()).isError, false);
+  }
+});
+
+test('metadata timeout at 60 seconds, listing and read, with no early refusal', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const log = t.mock.method(console, 'error', () => {});
+  for (const name of ['readOriginalFile', 'listFolderStructured']) {
+    const f = fixture();
+    f.ctx.getDrive = (() => ({ files: { get: () => new Promise(() => {}), list: () => new Promise(() => {}) } })) as any;
+    let settled = false;
+    const pending = handleOriginalRead(name, name === 'readOriginalFile' ? input : { folderId: 'folder_1' }, f.ctx)
+      .then(reply => { settled = true; return reply; });
+    t.mock.timers.tick(59999); await flush(); assert.equal(settled, false);
+    t.mock.timers.tick(1); refused(await pending);
+    assert.equal((await reading()).isError, false);
+  }
+  assert.deepEqual(log.mock.calls.map(call => call.arguments), [
+    ['[Drive.originalRead] refused cause=metadata_timeout'], ['[Drive.listStructured] refused cause=metadata_timeout'],
+  ]);
+});
+
+test('header wait has idle guard and disposes any late media response', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const log = t.mock.method(console, 'error', () => {});
+  const f = fixture(); let resolveMedia!: (value: unknown) => void;
+  f.ctx.getDrive = (() => ({ files: { get: (parameters: any) => parameters.alt
+    ? new Promise(resolve => { resolveMedia = resolve; }) : Promise.resolve({ data: metadata() }) } })) as any;
+  const pending = reading(f); await flush();
+  t.mock.timers.tick(120000); refused(await pending);
+  const late = new Readable({ read() {} }); resolveMedia({ data: late }); await flush();
+  assert.equal(late.destroyed, true);
+  assert.equal((await reading()).isError, false);
+  assert.deepEqual(log.mock.calls.map(call => call.arguments), [['[Drive.originalRead] refused cause=media_idle_timeout']]);
+});
+
+for (const cause of ['input_invalid', 'version_mismatch', 'size_out_of_range', 'native_document',
+  'short_read', 'md5_mismatch', 'changed_during_read', 'upstream_error:403', 'upstream_error:unknown']) {
+  test('refusal logs only fixed cause: ' + cause, async t => {
+    const log = t.mock.method(console, 'error', () => {});
+    const f = fixture();
+    switch (cause) {
+      case 'version_mismatch': f.before.version = '124'; break;
+      case 'size_out_of_range': f.before.size = '99999'; break;
+      case 'native_document': f.before.mimeType = 'application/vnd.google-apps.document'; break;
+      case 'short_read': f.stream = () => Readable.from([bytes.subarray(1)]); break;
+      case 'md5_mismatch': f.before.md5Checksum = f.after.md5Checksum = '0'.repeat(32); break;
+      case 'changed_during_read': f.after.version = '124'; break;
+      case 'upstream_error:403': f.ctx.getDrive = (() => ({ files: { get: async () => {
+        throw { response: { status: 403 }, message: 'synthetic_private_upstream', config: { fileId: 'file_1' } };
+      } } })) as any; break;
+      case 'upstream_error:unknown': f.fail = true; break;
+    }
+    const reply = await reading(f, cause === 'input_invalid' ? { ...input, extra: 'synthetic_private_input' } : input);
+    refused(reply);
+    assert.deepEqual(log.mock.calls.map(call => call.arguments), [[`[Drive.originalRead] refused cause=${cause}`]]);
+    assert.equal(JSON.stringify(log.mock.calls.map(call => call.arguments)).includes('file_1'), false);
+    assert.equal((await reading()).isError, false);
+  });
+}
+
+test('listing refusals have listing label and no folder id or provider detail', async t => {
+  const log = t.mock.method(console, 'error', () => {});
+  refused(await listing(fixture(), { folderId: "folder'" }));
+  const f = fixture(); f.fail = true; refused(await listing(f));
+  assert.deepEqual(log.mock.calls.map(call => call.arguments), [
+    ['[Drive.listStructured] refused cause=input_invalid'], ['[Drive.listStructured] refused cause=upstream_error:unknown'],
+  ]);
+});
+
 test('tools are registered in central dispatcher', async () => {
   for (const name of ['listFolderStructured','readOriginalFile']) assert.equal(toolDefinitions.filter(tool => tool.name===name).length,1);
   const f = fixture(); assert.equal((await handleTool('listFolderStructured',{ folderId:'folder_1' },f.ctx))?.isError,false);
