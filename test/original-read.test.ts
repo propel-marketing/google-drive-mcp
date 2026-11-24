@@ -204,15 +204,16 @@ test('never-ending progressing stream hits wall clock at exactly 600 seconds', a
   assert.equal((await reading()).isError, false);
 });
 
-test('injected disconnect signal aborts, releases latch; HTTP wiring remains pending', async t => {
+test('dispatcher disconnect signal aborts mid-media and releases latch', async t => {
   const log = t.mock.method(console, 'error', () => {});
   const f = fixture(); const stream = new Readable({ read() {} }); f.stream = () => stream;
   const disconnected = new AbortController();
-  const pending = handleOriginalRead('readOriginalFile', input, f.ctx, disconnected.signal);
+  f.ctx.signal = disconnected.signal;
+  const pending = handleTool('readOriginalFile', input, f.ctx);
   await flush();
   refused(await reading());
   disconnected.abort(new Error('synthetic_private_reason'));
-  refused(await pending);
+  refused((await pending)!);
   assert.equal(stream.destroyed, true);
   assert.equal((await reading()).isError, false);
   assert.deepEqual(log.mock.calls.map(call => call.arguments), [
@@ -252,18 +253,74 @@ test('metadata timeout at 60 seconds, listing and read, with no early refusal', 
   ]);
 });
 
-test('header wait has idle guard and disposes any late media response', async t => {
+test('header guard fires at 300 seconds and disposes any late media response', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const log = t.mock.method(console, 'error', () => {});
   const f = fixture(); let resolveMedia!: (value: unknown) => void;
   f.ctx.getDrive = (() => ({ files: { get: (parameters: any) => parameters.alt
     ? new Promise(resolve => { resolveMedia = resolve; }) : Promise.resolve({ data: metadata() }) } })) as any;
   const pending = reading(f); await flush();
-  t.mock.timers.tick(120000); refused(await pending);
+  t.mock.timers.tick(299999); await flush();
+  assert.equal(log.mock.calls.length, 0);
+  t.mock.timers.tick(1); refused(await pending);
   const late = new Readable({ read() {} }); resolveMedia({ data: late }); await flush();
   assert.equal(late.destroyed, true);
   assert.equal((await reading()).isError, false);
+  assert.deepEqual(log.mock.calls.map(call => call.arguments), [['[Drive.originalRead] refused cause=media_headers_timeout']]);
+});
+
+for (const delay of [60000, 299999, 300000]) {
+  test('delayed media headers boundary ' + delay, async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const log = t.mock.method(console, 'error', () => {});
+    const f = fixture();
+    f.ctx.getDrive = (() => ({ files: { get: (parameters: any) => parameters.alt
+      ? new Promise(resolve => setTimeout(() => resolve({ data: Readable.from([bytes]) }), delay))
+      : Promise.resolve({ data: metadata() }) } })) as any;
+    const pending = reading(f); await flush();
+    t.mock.timers.tick(delay);
+    const reply = await pending;
+    if (delay === 300000) {
+      refused(reply);
+      assert.deepEqual(log.mock.calls.map(call => call.arguments), [['[Drive.originalRead] refused cause=media_headers_timeout']]);
+    } else {
+      assert.equal(reply.isError, false);
+      assert.equal((reply.structuredContent as any).blob, bytes.toString('base64'));
+      assert.equal(log.mock.calls.length, 0);
+    }
+  });
+}
+
+test('body idle starts at headers, not during their wait', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const log = t.mock.method(console, 'error', () => {});
+  const f = fixture(); const stream = new Readable({ read() {} });
+  let resolveMedia!: (value: unknown) => void;
+  f.ctx.getDrive = (() => ({ files: { get: (parameters: any) => parameters.alt
+    ? new Promise(resolve => { resolveMedia = resolve; }) : Promise.resolve({ data: metadata() }) } })) as any;
+  let settled = false;
+  const pending = reading(f).then(reply => { settled = true; return reply; });
+  await flush(); t.mock.timers.tick(200000); await flush();
+  assert.equal(settled, false);
+  resolveMedia({ data: stream }); await flush();
+  t.mock.timers.tick(119999); await flush(); assert.equal(settled, false);
+  t.mock.timers.tick(1); refused(await pending);
   assert.deepEqual(log.mock.calls.map(call => call.arguments), [['[Drive.originalRead] refused cause=media_idle_timeout']]);
+});
+
+test('dispatcher signal that never fires changes neither read nor listing', async () => {
+  const f = fixture(); f.ctx.signal = new AbortController().signal;
+  assert.equal((await handleTool('readOriginalFile', input, f.ctx))?.isError, false);
+  assert.equal((await handleTool('listFolderStructured', { folderId: 'folder_1' }, f.ctx))?.isError, false);
+});
+
+test('dispatcher forwards listing abort during metadata', async t => {
+  const log = t.mock.method(console, 'error', () => {});
+  const f = fixture(); const controller = new AbortController(); f.ctx.signal = controller.signal;
+  f.ctx.getDrive = (() => ({ files: { list: () => new Promise(() => {}) } })) as any;
+  const pending = handleTool('listFolderStructured', { folderId: 'folder_1' }, f.ctx);
+  await flush(); controller.abort(); refused((await pending)!);
+  assert.deepEqual(log.mock.calls.map(call => call.arguments), [['[Drive.listStructured] refused cause=client_disconnected']]);
 });
 
 for (const cause of ['input_invalid', 'version_mismatch', 'size_out_of_range', 'native_document',
@@ -298,6 +355,77 @@ test('listing refusals have listing label and no folder id or provider detail', 
   assert.deepEqual(log.mock.calls.map(call => call.arguments), [
     ['[Drive.listStructured] refused cause=input_invalid'], ['[Drive.listStructured] refused cause=upstream_error:unknown'],
   ]);
+});
+
+test('SDK request cancellation reaches the media reader and releases latch', async t => {
+  const log = t.mock.method(console, 'error', () => {});
+  const { client, mocks, cleanup } = await setupTestServer();
+  const stream = new Readable({ read() {} });
+  let started!: () => void;
+  const ready = new Promise<void>(resolve => { started = resolve; });
+  mocks.drive.service.files.get._setImpl(async (parameters: any) => {
+    if (parameters.alt) { started(); return { data: stream }; }
+    return { data: metadata() };
+  });
+  try {
+    const controller = new AbortController();
+    const pending = client.callTool({ name: 'readOriginalFile', arguments: input }, undefined, { signal: controller.signal });
+    const rejected = assert.rejects(pending);
+    await ready; await flush(); controller.abort(); await rejected;
+    await new Promise<void>(resolve => stream.destroyed ? resolve() : stream.once('close', resolve));
+    await flush();
+    assert.equal(stream.destroyed, true);
+    assert.ok(log.mock.calls.some(call => call.arguments[0] === '[Drive.originalRead] refused cause=client_disconnected'));
+    assert.equal((await reading()).isError, false);
+  } finally { await cleanup(); }
+});
+
+test('HTTP premature response close aborts only its read; normal body end and completion do not', async t => {
+  const log = t.mock.method(console, 'error', () => {});
+  const { mocks, cleanup } = await setupTestServer();
+  const { createHttpApp } = await import('../src/index.js');
+  const http = await import('node:http');
+  const { app, sessions } = createHttpApp('127.0.0.1');
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise<void>(resolve => server.once('listening', resolve));
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  const endpoint = `http://127.0.0.1:${address.port}/mcp`;
+  const headers = { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' };
+  let stream = new Readable({ read() {} });
+  let started!: () => void;
+  const ready = new Promise<void>(resolve => { started = resolve; });
+  let mediaSignal!: AbortSignal;
+  mocks.drive.service.files.get._setImpl(async (parameters: any, options: any) => {
+    if (parameters.alt) { mediaSignal = options.signal; started(); return { data: stream }; }
+    return { data: metadata() };
+  });
+  try {
+    const initialized = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ jsonrpc: '2.0', id: 1,
+      method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'synthetic', version: '1' } } }) });
+    const sid = initialized.headers.get('mcp-session-id')!; await initialized.text();
+    const callHeaders = { ...headers, 'mcp-session-id': sid };
+    const body = JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'readOriginalFile', arguments: input } });
+    const request = http.request(endpoint, { method: 'POST', headers: callHeaders });
+    request.on('error', () => {});
+    request.end(body); // A normal request-body end must not cancel the tool.
+    await ready; await flush();
+    assert.equal(mediaSignal.aborted, false); assert.equal(stream.destroyed, false);
+    const closed = new Promise<void>(resolve => stream.once('close', resolve));
+    request.destroy(); await closed; await flush();
+    assert.equal(mediaSignal.aborted, true);
+    assert.ok(log.mock.calls.some(call => call.arguments[0] === '[Drive.originalRead] refused cause=client_disconnected'));
+    stream = Readable.from([bytes]);
+    const normal = await fetch(endpoint, { method: 'POST', headers: callHeaders, body });
+    const text = await normal.text();
+    assert.ok(text.includes('"isError":false'));
+    await flush(); assert.equal(mediaSignal.aborted, false);
+    assert.equal((await reading()).isError, false);
+  } finally {
+    for (const session of sessions.values()) { await session.transport.close(); await session.server.close(); }
+    server.closeAllConnections();
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    await cleanup();
+  }
 });
 
 test('tools are registered in central dispatcher', async () => {

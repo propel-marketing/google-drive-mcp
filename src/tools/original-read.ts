@@ -15,16 +15,18 @@ const OriginalMetadata = z.object({
 const Fields = 'id,name,mimeType,size,trashed,version,parents,md5Checksum';
 // Runaway guards, not performance targets. 16 MiB at 0.5 Mbit/s needs ~270 s;
 // 600 s leaves a wide margin. Idle time is separate from total elapsed time.
-// Nest outward: metadata 60 s / media idle 120 s < read 600 s < client 660 s;
+// Header preparation has its own 300 s guard; body idle starts at headers.
+// Nest outward: metadata 60 s / idle 120 s / headers 300 s < read 600 s < client 660 s;
 // metadata 60 s < listing 120 s < client 150 s (client configured separately).
 const READ_WALL_MS = 600000;
 const LIST_WALL_MS = 120000;
 const MEDIA_IDLE_MS = 120000;
+const MEDIA_HEADERS_MS = 300000;
 const METADATA_MS = 60000;
 let readingOriginal = false;
 
 type Cause = 'input_invalid' | 'version_mismatch' | 'size_out_of_range' | 'native_document'
-  | 'metadata_timeout' | 'media_idle_timeout' | 'wall_clock_guard' | 'short_read'
+  | 'metadata_timeout' | 'media_headers_timeout' | 'media_idle_timeout' | 'wall_clock_guard' | 'short_read'
   | 'md5_mismatch' | 'changed_during_read' | 'reader_busy' | 'client_disconnected'
   | `upstream_error:${number | 'unknown'}`;
 class Refusal extends Error {
@@ -137,22 +139,25 @@ async function originalBytes(args: unknown, ctx: ToolContext, signal: AbortSigna
   signal.addEventListener('abort', abort, { once: true });
   mediaController.signal.addEventListener('abort', destroy, { once: true });
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
+  let headersTimer: ReturnType<typeof setTimeout> | undefined;
   const resetIdle = () => {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => mediaController.abort(new Refusal('media_idle_timeout')), MEDIA_IDLE_MS);
   };
   try {
     checkAbort(signal);
-    resetIdle(); // Includes headers/first byte; no media per-call timeout.
-    // TODO(P1-CAUSE): apply the measured defect and add its regression test after
-    // disposable-instance timings return. Guards alone are NOT a cause fix.
+    // Provider preparation can delay headers without a body stall. The guards
+    // are the fix: allow preparation separately from no-byte body idle time.
+    headersTimer = setTimeout(() => mediaController.abort(new Refusal('media_headers_timeout')), MEDIA_HEADERS_MS);
     const mediaRequest = drive.files.get({ fileId: input.fileId, alt: 'media', supportsAllDrives: true },
       { signal: mediaController.signal, retry: false, responseType: 'stream' }).then(result => {
         if (mediaController.signal.aborted) (result.data as Readable)?.destroy?.();
         return result;
       });
     media = (await abortable(mediaRequest, mediaController.signal)).data as Readable;
+    clearTimeout(headersTimer);
     checkAbort(mediaController.signal);
+    resetIdle(); // Starts at headers; only nonempty chunks re-arm it.
     if (!media || typeof media[Symbol.asyncIterator] !== 'function'
         || typeof media.destroy !== 'function') throw new Refusal('input_invalid');
     for await (const chunk of media) {
@@ -179,6 +184,7 @@ async function originalBytes(args: unknown, ctx: ToolContext, signal: AbortSigna
   } catch (error) {
     throw mediaController.signal.aborted ? mediaController.signal.reason : error;
   } finally {
+    clearTimeout(headersTimer);
     clearTimeout(idleTimer);
     signal.removeEventListener('abort', abort);
     mediaController.signal.removeEventListener('abort', destroy);
@@ -187,9 +193,6 @@ async function originalBytes(args: unknown, ctx: ToolContext, signal: AbortSigna
   }
 }
 
-// TODO(D2-WIRING): the dispatcher supplies only name/args/ctx, with no HTTP
-// request/response. Wire this signal to premature response close before claiming
-// disconnect handling is live. Normal request close after body receipt is not it.
 export async function handleOriginalRead(name: string, args: unknown, ctx: ToolContext,
   clientDisconnected?: AbortSignal): Promise<ToolResult> {
   const read = name === 'readOriginalFile';

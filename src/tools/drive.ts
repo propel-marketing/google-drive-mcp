@@ -645,7 +645,7 @@ export async function handleTool(
   switch (toolName) {
     case 'listFolderStructured':
     case 'readOriginalFile':
-      return handleOriginalRead(toolName, args, ctx);
+      return handleOriginalRead(toolName, args, ctx, ctx.signal);
 
     case "search": {
       const validation = SearchSchema.safeParse(args);
